@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Games Master</title>
+<style>
+  :root { --bg: #10261d; --card: #1b3a2d; --gold: #f5c84c; --red: #c8312f; --text: #fff8e7; --muted: #9fb8ab; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
+  main { max-width: 560px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 1.4rem; margin: 4px 0 4px; color: var(--gold); }
+  .sub { color: var(--muted); font-size: .9rem; margin-bottom: 16px; }
+  .next {
+    width: 100%; font: inherit; font-size: 1.3rem; font-weight: 700; padding: 18px; border: 0;
+    border-radius: 16px; background: var(--red); color: #fff; margin-bottom: 18px; cursor: pointer;
+  }
+  .next:disabled { background: #3b5248; color: var(--muted); cursor: default; }
+  .row {
+    display: flex; align-items: center; gap: 12px; background: var(--card); border-radius: 14px;
+    padding: 10px 12px; margin-bottom: 8px;
+  }
+  .row .sym { font-size: 2rem; width: 2.4rem; text-align: center; }
+  .row .info { flex: 1; min-width: 0; }
+  .row .t { font-weight: 700; }
+  .row .r { color: var(--muted); font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .toggle {
+    font: inherit; font-weight: 700; min-width: 96px; padding: 12px 10px; border-radius: 12px; border: 0; cursor: pointer;
+    background: #3b5248; color: var(--text);
+  }
+  .toggle.on { background: var(--gold); color: #3a1210; }
+  .reset { margin-top: 24px; width: 100%; font: inherit; padding: 12px; border-radius: 12px; border: 1px solid #5a6f66; background: none; color: var(--muted); cursor: pointer; }
+  .denied { text-align: center; margin-top: 30vh; color: var(--muted); }
+  .status { font-size: .8rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main id="app"></main>
+
+<script src="config.js"></script>
+<script src="state.js"></script>
+<script>
+  const app = document.getElementById("app");
+  const key = new URLSearchParams(location.search).get("key");
+
+  if (key !== ADMIN_KEY) {
+    app.innerHTML = '<p class="denied">Nothing to see here 🎅</p>';
+  } else {
+    app.innerHTML =
+      "<h1>🎅 Games Master</h1>" +
+      '<div class="sub"><span id="count"></span> · <span class="status" id="status">Connecting…</span></div>' +
+      '<button class="next" id="next"></button>' +
+      '<div id="list"></div>' +
+      '<button class="reset" id="reset">Reset game (lock everything)</button>';
+
+    let unlocked = {};
+    const rows = {};
+
+    TILES.forEach((t) => {
+      const row = document.createElement("div");
+      row.className = "row";
+      row.innerHTML =
+        '<div class="sym">' + t.symbol + '</div>' +
+        '<div class="info"><div class="t">' + t.title + '</div><div class="r"></div></div>' +
+        '<button class="toggle"></button>';
+      row.querySelector(".r").textContent = t.reveal.replace(/<[^>]+>/g, "");
+      const btn = row.querySelector(".toggle");
+      btn.addEventListener("click", () => {
+        const on = !unlocked[t.id];
+        if (!on && !confirm("Lock \"" + t.title + "\" again?")) return;
+        GameState.setUnlocked(t.id, on);
+      });
+      rows[t.id] = btn;
+      document.getElementById("list").appendChild(row);
+    });
+
+    const nextBtn = document.getElementById("next");
+    nextBtn.addEventListener("click", () => {
+      const t = TILES.find((t) => !unlocked[t.id]);
+      if (t) GameState.setUnlocked(t.id, true);
+    });
+
+    document.getElementById("reset").addEventListener("click", () => {
+      if (confirm("Lock ALL tiles and start over?")) GameState.reset();
+    });
+
+    GameState.subscribe((state) => {
+      unlocked = state;
+      let n = 0;
+      TILES.forEach((t) => {
+        const on = !!state[t.id];
+        if (on) n++;
+        rows[t.id].classList.toggle("on", on);
+        rows[t.id].textContent = on ? "Unlocked" : "Unlock";
+      });
+      document.getElementById("count").textContent = n + "/" + TILES.length + " unlocked";
+      const next = TILES.find((t) => !state[t.id]);
+      nextBtn.disabled = !next;
+      nextBtn.textContent = next ? "Unlock next: " + next.symbol + " " + next.title : "All tiles unlocked 🎉";
+    }, (connected) => {
+      document.getElementById("status").textContent = (GameState.isDemo ? "Demo mode · " : "") + (connected ? "● Live" : "○ Reconnecting…");
+    }).catch((err) => {
+      document.getElementById("status").textContent = "⚠ " + err.message;
+    });
+  }
+</script>
+</body>
+</html>
