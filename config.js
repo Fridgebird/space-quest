@@ -17,33 +17,33 @@ window.FIREBASE_CONFIG = {
 };
 
 // 2) A name for this game's data. Change it to start a completely fresh game.
-window.GAME_ID = "christmas-2026";
+window.GAME_ID = "space-quest-2626";
 
 // 3) The admin page only opens with ?key=<this>, e.g. admin.html?key=rudolph
 window.ADMIN_KEY = "rudolph";
 
 // 4) Text shown on the start screen.
 window.GAME = {
-  title: "The Great Christmas Quest",
+  title: "Space Quest 2626",
   intro: [
-    "Welcome, elves! Santa needs your help.",
-    "Each tile below stands for a task hidden around the house. Work out what each symbol means and complete the task as a team.",
-    "When the Games Master is happy that a task is done, that tile will unlock on this screen. Tap an unlocked tile to reveal what's inside.",
-    "Unlock every tile to win!"
+    "Welcome aboard, crew. Your mission needs all of you working as one team.",
+    "Each tile stands for a task to complete around the house. Work out what each symbol means and complete the task together.",
+    "When Mission Control confirms a task is done, its tile will unlock on this screen. Tap an unlocked tile to receive its transmission.",
+    "Unlock every tile to complete the mission!"
   ],
-  finale: "You did it! Every tile is unlocked. Merry Christmas! 🎉"
+  finale: "Mission complete! Every system is online. Well done, crew! 🚀"
 };
 
 // 5) The tiles. `symbol` is shown while locked (any emoji or short text).
 //    `reveal` is shown when an unlocked tile is tapped (it can contain HTML).
 window.TILES = [
-  { id: "tree",    symbol: "🎄", title: "The Tree",      reveal: "Clue #1: Look where the cold things live." },
-  { id: "fridge",  symbol: "🧊", title: "The Fridge",    reveal: "Clue #2: Count the stockings and remember the number." },
-  { id: "sock",    symbol: "🧦", title: "The Stockings", reveal: "Clue #3: Sing a carol, all 8 of you, in tune!" },
-  { id: "music",   symbol: "🎶", title: "The Carol",     reveal: "Clue #4: Find the star that isn't on the tree." },
-  { id: "star",    symbol: "⭐", title: "The Star",      reveal: "Clue #5: Wrap something without using tape." },
-  { id: "gift",    symbol: "🎁", title: "The Wrapping",  reveal: "Clue #6: Build the tallest tower of mince pies." },
-  { id: "pie",     symbol: "🥧", title: "The Pies",      reveal: "Clue #7: Find the reindeer hiding in the garden." },
-  { id: "deer",    symbol: "🦌", title: "The Reindeer",  reveal: "Clue #8: Last one! Ask the Games Master for the final prize." },
-  { id: "bell",    symbol: "🔔", title: "The Bell",      reveal: "The prize is under the sofa cushion! 🏆" }
+  { id: "rocket",    symbol: "🚀", title: "Rocket",    reveal: "Placeholder transmission 1" },
+  { id: "moon",      symbol: "🌙", title: "Moon",      reveal: "Placeholder transmission 2" },
+  { id: "satellite", symbol: "🛰️", title: "Satellite", reveal: "Placeholder transmission 3" },
+  { id: "alien",     symbol: "👽", title: "Alien",     reveal: "Placeholder transmission 4" },
+  { id: "planet",    symbol: "🪐", title: "Planet",    reveal: "Placeholder transmission 5" },
+  { id: "comet",     symbol: "☄️", title: "Comet",     reveal: "Placeholder transmission 6" },
+  { id: "telescope", symbol: "🔭", title: "Telescope", reveal: "Placeholder transmission 7" },
+  { id: "ufo",       symbol: "🛸", title: "UFO",       reveal: "Placeholder transmission 8" },
+  { id: "earth",     symbol: "🌍", title: "Earth",     reveal: "Placeholder transmission 9" }
 ];
