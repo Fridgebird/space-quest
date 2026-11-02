@@ -1,12 +1,12 @@
-// Shared unlock state. Uses Firebase Realtime Database when configured,
+// Shared game state. Uses Firebase Realtime Database when configured,
 // otherwise localStorage (demo mode: syncs between tabs in one browser only).
 //
-// State shape: { "<tileId>": true, ... } for each unlocked tile.
+// State shape: { cleared: { "<alertId>": true, ... }, warped: true, resetAt: <timestamp> }
 
 window.GameState = (function () {
   const FB_VERSION = "10.12.2";
   const isDemo = !window.FIREBASE_CONFIG;
-  const demoKey = "xmas-game:" + window.GAME_ID;
+  const demoKey = "quest-game:" + window.GAME_ID;
   let ref = null;
   let ready = null;
 
@@ -30,7 +30,7 @@ window.GameState = (function () {
         .then(() => loadScript(base + "/firebase-database-compat.js"))
         .then(() => {
           firebase.initializeApp(window.FIREBASE_CONFIG);
-          ref = firebase.database().ref("games/" + window.GAME_ID + "/unlocked");
+          ref = firebase.database().ref("games/" + window.GAME_ID);
         });
     }
     return ready;
@@ -41,7 +41,7 @@ window.GameState = (function () {
   }
   function writeDemo(state) {
     localStorage.setItem(demoKey, JSON.stringify(state));
-    window.dispatchEvent(new Event("xmas-demo-change"));
+    window.dispatchEvent(new Event("quest-demo-change"));
   }
 
   return {
@@ -50,14 +50,15 @@ window.GameState = (function () {
     // Calls cb(state) now and on every change. Optional onConn(bool) reports connection status.
     subscribe(cb, onConn) {
       return init().then(() => {
+        const normalise = (s) => Object.assign({ cleared: {}, warped: false, resetAt: null }, s);
         if (isDemo) {
-          const fire = () => cb(readDemo());
+          const fire = () => cb(normalise(readDemo()));
           window.addEventListener("storage", (e) => { if (e.key === demoKey) fire(); });
-          window.addEventListener("xmas-demo-change", fire);
+          window.addEventListener("quest-demo-change", fire);
           fire();
           if (onConn) onConn(true);
         } else {
-          ref.on("value", (snap) => cb(snap.val() || {}));
+          ref.on("value", (snap) => cb(normalise(snap.val())));
           if (onConn) {
             firebase.database().ref(".info/connected").on("value", (s) => onConn(!!s.val()));
           }
@@ -65,20 +66,35 @@ window.GameState = (function () {
       });
     },
 
-    setUnlocked(id, unlocked) {
+    setCleared(id, cleared) {
       return init().then(() => {
         if (isDemo) {
           const s = readDemo();
-          if (unlocked) s[id] = true; else delete s[id];
+          s.cleared = s.cleared || {};
+          if (cleared) s.cleared[id] = true; else delete s.cleared[id];
           writeDemo(s);
         } else {
-          return ref.child(id).set(unlocked ? true : null);
+          return ref.child("cleared/" + id).set(cleared ? true : null);
         }
       });
     },
 
+    setWarped() {
+      return init().then(() => {
+        if (isDemo) {
+          const s = readDemo();
+          s.warped = true;
+          writeDemo(s);
+        } else {
+          return ref.child("warped").set(true);
+        }
+      });
+    },
+
+    // Raises every alert again and sends the tablet back to the log-on screen.
     reset() {
-      return init().then(() => (isDemo ? writeDemo({}) : ref.remove()));
+      const fresh = { resetAt: Date.now() };
+      return init().then(() => (isDemo ? writeDemo(fresh) : ref.set(fresh)));
     }
   };
 })();

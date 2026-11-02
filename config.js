@@ -2,9 +2,9 @@
 //  GAME SETTINGS: edit this file to set up your game
 // ============================================================
 
-// 1) Paste your Firebase config here (see SETUP.md).
-//    While this is null, the game runs in DEMO MODE: unlocks only work
-//    between tabs in the same browser on the same computer. That's handy for testing.
+// 1) Your Firebase config (see SETUP.md).
+//    If this is null, the game runs in DEMO MODE: alerts only sync
+//    between tabs in the same browser on the same computer.
 window.FIREBASE_CONFIG = {
   apiKey: "AIzaSyBwn0jBFqtQF--tG1056Rk7rr46CQp2UCc",
   authDomain: "space-quest-2626.firebaseapp.com",
@@ -22,28 +22,92 @@ window.GAME_ID = "space-quest-2626";
 // 3) The admin page only opens with ?key=<this>, e.g. admin.html?key=rudolph
 window.ADMIN_KEY = "rudolph";
 
-// 4) Text shown on the start screen.
-window.GAME = {
-  title: "Space Quest 2626",
-  intro: [
-    "Welcome aboard, crew. Your mission needs all of you working as one team.",
-    "Each tile stands for a task to complete around the house. Work out what each symbol means and complete the task together.",
-    "When Mission Control confirms a task is done, its tile will unlock on this screen. Tap an unlocked tile to receive its transmission.",
-    "Unlock every tile to complete the mission!"
-  ],
-  finale: "Mission complete! Every system is online. Well done, crew! 🚀"
+// 4) About the Ship screen. Add, remove or rename any of these rows.
+//    `name` is also shown in the header of the ship's computer.
+window.SHIP = {
+  name: "[Ship name]",
+  details: [
+    ["Type", "[Ship type]"],
+    ["Registry", "[Registry number]"],
+    ["Home port", "Earth"],
+    ["Destination", "[Destination]"],
+    ["Cargo", "[Cargo]"],
+    ["Current position", "UNKNOWN"]
+  ]
 };
 
-// 5) The tiles. `symbol` is shown while locked (any emoji or short text).
-//    `reveal` is shown when an unlocked tile is tapped (it can contain HTML).
-window.TILES = [
-  { id: "rocket",    symbol: "🚀", title: "Rocket",    reveal: "Placeholder transmission 1" },
-  { id: "moon",      symbol: "🌙", title: "Moon",      reveal: "Placeholder transmission 2" },
-  { id: "satellite", symbol: "🛰️", title: "Satellite", reveal: "Placeholder transmission 3" },
-  { id: "alien",     symbol: "👽", title: "Alien",     reveal: "Placeholder transmission 4" },
-  { id: "planet",    symbol: "🪐", title: "Planet",    reveal: "Placeholder transmission 5" },
-  { id: "comet",     symbol: "☄️", title: "Comet",     reveal: "Placeholder transmission 6" },
-  { id: "telescope", symbol: "🔭", title: "Telescope", reveal: "Placeholder transmission 7" },
-  { id: "ufo",       symbol: "🛸", title: "UFO",       reveal: "Placeholder transmission 8" },
-  { id: "earth",     symbol: "🌍", title: "Earth",     reveal: "Placeholder transmission 9" }
+// 5) Crew Manifest screen. One row per player.
+window.CREW = [
+  { name: "[Crew member 1]", role: "[Role]" },
+  { name: "[Crew member 2]", role: "[Role]" },
+  { name: "[Crew member 3]", role: "[Role]" },
+  { name: "[Crew member 4]", role: "[Role]" },
+  { name: "[Crew member 5]", role: "[Role]" },
+  { name: "[Crew member 6]", role: "[Role]" },
+  { name: "[Crew member 7]", role: "[Role]" },
+  { name: "[Crew member 8]", role: "[Role]" }
+];
+
+// 6) Messages screen. The first message types itself out when the crew log on.
+//    Each string in `body` is a paragraph.
+window.MESSAGES = [
+  {
+    from: "Ship's Computer",
+    subject: "Emergency stasis revival",
+    body: [
+      "Crew, you have been awoken from stasis because this ship is lost in deep space.",
+      "Prolonged stasis has caused memory loss. This is expected. Your identities can be found in the Crew Manifest.",
+      "Multiple ship systems have raised alerts. All alerts must be cleared before the warp drive can be engaged.",
+      "Clear every alert, engage the warp drive, and you can still reach Earth in time for Christmas."
+    ]
+  }
+];
+
+// 7) Text for the ending, shown after the Warp button is pressed.
+window.ENDING = {
+  title: "Welcome home, crew",
+  text: "You made it back to Earth in time for Christmas!"
+};
+
+// 8) The alerts. Each one needs:
+//    id           A unique short name. Don't change it during a game.
+//    symbol       The emoji on the tile.
+//    title        The alert's name.
+//    description  What the crew see when they tap the active alert.
+//    clearedText  What they see when they tap it after it's cleared.
+//    code         OPTIONAL. If set, the crew clear this alert themselves by entering
+//                 this code (capitals and spaces don't matter). If left out,
+//                 only you can clear it, from Mission Control.
+window.ALERTS = [
+  {
+    id: "infestation", symbol: "🐛", title: "Infestation",
+    description: "Placeholder: details of the infestation task.",
+    clearedText: "Infestation contained."
+  },
+  {
+    id: "navigation", symbol: "🧭", title: "Navigation",
+    description: "Navigation system offline. Enter a valid navigation code to restore it.",
+    clearedText: "Navigation restored. Course plotted for Earth.",
+    code: "2626"
+  },
+  {
+    id: "life-support", symbol: "💨", title: "Life Support",
+    description: "Placeholder: details of the life support task.",
+    clearedText: "Life support stable."
+  },
+  {
+    id: "reactor", symbol: "☢️", title: "Reactor",
+    description: "Placeholder: details of the reactor task.",
+    clearedText: "Reactor stable."
+  },
+  {
+    id: "comms", symbol: "📡", title: "Communications",
+    description: "Placeholder: details of the communications task.",
+    clearedText: "Communications restored."
+  },
+  {
+    id: "hull", symbol: "🛡️", title: "Hull Breach",
+    description: "Placeholder: details of the hull breach task.",
+    clearedText: "Hull sealed."
+  }
 ];

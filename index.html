@@ -3,21 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Space Quest</title>
+<title>Ship's Computer</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Exo+2:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg1: #05060f; --bg2: #1a1145; --cyan: #5ee7ff; --violet: #9b5cff;
-    --panel: #151a3a; --pale: #eef4ff; --locked: #171b38; --text: #eef4ff;
+    --bg1: #05060f; --bg2: #1a1145; --cyan: #5ee7ff; --violet: #9b5cff; --red: #ff4d5e; --green: #4be3a0;
+    --panel: #151a3a; --panel-2: #1d2350; --text: #eef4ff; --muted: #a3acd0;
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html, body { margin: 0; min-height: 100%; }
   body {
     font-family: "Exo 2", system-ui, sans-serif; color: var(--text);
     background:
       radial-gradient(ellipse at 15% 10%, rgba(155,92,255,.35), transparent 50%),
       radial-gradient(ellipse at 90% 80%, rgba(94,231,255,.18), transparent 50%),
-      linear-gradient(var(--bg2), var(--bg1) 70%) fixed;
+      linear-gradient(var(--bg2), var(--bg1) 70%);
     background-attachment: fixed;
     min-height: 100vh; overflow-x: hidden;
   }
@@ -25,109 +26,206 @@
   .star { position: absolute; border-radius: 50%; background: #fff; animation: twinkle ease-in-out infinite alternate; }
   @keyframes twinkle { from { opacity: .15; } to { opacity: 1; } }
 
-  main { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 24px 16px 48px; }
-  h1 {
-    font-family: "Orbitron", sans-serif; color: var(--cyan); letter-spacing: .04em;
-    font-size: clamp(1.8rem, 6vw, 3.4rem); text-align: center; margin: 8px 0 20px;
-    text-shadow: 0 0 22px rgba(94,231,255,.6);
-  }
-  .card { background: rgba(21,26,58,.75); border: 2px solid rgba(94,231,255,.4); border-radius: 20px; padding: 24px; }
-  .intro p { font-size: 1.2rem; line-height: 1.6; margin: 0 0 14px; }
+  h1, h2, .display { font-family: "Orbitron", sans-serif; }
   .btn {
-    display: block; margin: 20px auto 0; font: inherit; font-weight: 700; font-size: 1.3rem;
-    padding: 14px 40px; border: 0; border-radius: 999px; cursor: pointer;
-    background: var(--violet); color: #fff; box-shadow: 0 5px 0 #5a2ca8;
+    font: inherit; font-weight: 700; font-size: 1.2rem; padding: 14px 36px; border: 0; border-radius: 999px;
+    cursor: pointer; background: var(--violet); color: #fff; box-shadow: 0 5px 0 #5a2ca8;
   }
   .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #5a2ca8; }
 
-  .progress { text-align: center; font-size: 1.2rem; margin-bottom: 16px; }
-  .bar { height: 14px; background: rgba(255,255,255,.12); border-radius: 999px; overflow: hidden; margin-top: 8px; }
-  .bar > div { height: 100%; width: 0; background: linear-gradient(90deg, var(--violet), var(--cyan)); transition: width .8s ease; }
+  /* Log-on */
+  #logon { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; padding: 24px 16px; text-align: center; }
+  #logon h1 { color: var(--cyan); font-size: clamp(1.6rem, 6vw, 3rem); margin: 0; text-shadow: 0 0 22px rgba(94,231,255,.6); }
+  #logon p { color: var(--muted); font-size: 1.2rem; margin: 0; }
 
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  /* Console layout: sidebar on tablets, tabs along the top on phones */
+  #console { position: relative; z-index: 1; display: grid; grid-template-columns: 230px minmax(0, 1fr); grid-template-rows: auto 1fr; min-height: 100vh; }
+  header { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; border-bottom: 1px solid rgba(94,231,255,.3); background: rgba(5,6,15,.55); }
+  header .ship { font-family: "Orbitron", sans-serif; color: var(--cyan); font-size: 1.15rem; }
+  header .sub { color: var(--muted); font-size: .85rem; white-space: nowrap; }
+  nav { display: flex; flex-direction: column; gap: 8px; padding: 16px 12px; border-right: 1px solid rgba(94,231,255,.2); background: rgba(5,6,15,.35); }
+  nav button {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 56px; width: 100%;
+    font: inherit; font-weight: 700; font-size: 1.05rem; text-align: left; color: var(--text);
+    padding: 10px 14px; border-radius: 12px; border: 1px solid transparent; background: none; cursor: pointer;
+  }
+  nav button.active { background: var(--panel-2); border-color: var(--cyan); color: var(--cyan); }
+  .badge {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 28px; padding: 0 8px;
+    border-radius: 999px; background: var(--red); color: #fff; font-size: .95rem; box-shadow: 0 0 12px rgba(255,77,94,.8);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 50% { box-shadow: 0 0 2px rgba(255,77,94,.3); } }
+  main { padding: 20px; min-width: 0; max-width: 900px; width: 100%; }
+  main h2 { color: var(--cyan); font-size: 1.4rem; margin: 0 0 16px; }
+
+  @media (max-width: 700px) {
+    #console { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr; }
+    header { padding: 12px 16px; }
+    nav { flex-direction: row; gap: 4px; padding: 8px; border-right: 0; border-bottom: 1px solid rgba(94,231,255,.2); }
+    nav button { flex: 1 1 0; flex-direction: column; justify-content: center; text-align: center; font-size: .8rem; padding: 6px 4px; position: relative; min-width: 0; }
+    nav .badge { position: absolute; top: 2px; right: 2px; min-width: 22px; height: 22px; padding: 0 5px; font-size: .8rem; }
+    main { padding: 16px; }
+  }
+
+  /* Messages */
+  .card { background: rgba(21,26,58,.8); border: 1px solid rgba(94,231,255,.35); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+  .msg-head { color: var(--muted); font-size: .9rem; margin-bottom: 4px; }
+  .msg-subject { font-weight: 700; font-size: 1.25rem; margin-bottom: 12px; }
+  .msg-body p { font-size: 1.15rem; line-height: 1.6; margin: 0 0 12px; min-height: 1.6em; }
+  .caret::after { content: "▌"; color: var(--cyan); animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .msg-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+  .link-btn { font: inherit; font-weight: 700; color: var(--cyan); background: none; border: 1px solid var(--cyan); border-radius: 999px; padding: 10px 22px; cursor: pointer; }
+
+  /* Crew + ship */
+  .rows { width: 100%; border-collapse: collapse; }
+  .rows th, .rows td { text-align: left; padding: 14px 12px; border-bottom: 1px solid rgba(94,231,255,.15); font-size: 1.1rem; overflow-wrap: anywhere; }
+  .rows tr:last-child th, .rows tr:last-child td { border-bottom: 0; }
+  .rows th { color: var(--muted); font-weight: 400; width: 40%; }
+
+  /* Alerts */
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
   @media (max-width: 480px) { .grid { gap: 10px; } }
   .tile {
-    position: relative; aspect-ratio: 1; border-radius: 18px; border: 2px solid rgba(94,231,255,.15);
+    position: relative; min-height: 130px; aspect-ratio: 1; border-radius: 16px; border: 2px solid var(--red);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    font: inherit; color: inherit; padding: 8px; user-select: none;
+    font: inherit; color: inherit; padding: 8px; cursor: pointer; background: #2d1230;
+    box-shadow: 0 0 16px rgba(255,77,94,.45);
   }
-  .tile .sym { font-size: clamp(2.6rem, 11vw, 5rem); line-height: 1; }
-  .tile .name { margin-top: 8px; font-weight: 700; font-size: clamp(.8rem, 2.6vw, 1.1rem); text-align: center; }
-  .tile.locked { background: var(--locked); cursor: not-allowed; }
-  .tile.locked .sym { filter: grayscale(.7) brightness(.75); opacity: .75; }
-  .tile.locked .name { opacity: .6; }
-  .tile.locked::after { content: "🔒"; position: absolute; top: 8px; right: 10px; font-size: 1.2rem; }
-  .tile.open {
-    background: linear-gradient(160deg, #2b1f7a, #0f6f8f); cursor: pointer;
-    border-color: var(--cyan); box-shadow: 0 0 22px rgba(94,231,255,.7);
-  }
-  .tile.open:hover { transform: translateY(-3px); }
-  .tile.seen { background: var(--panel); border-color: rgba(94,231,255,.5); box-shadow: none; }
-  .tile.seen::after { content: "✔"; position: absolute; top: 6px; right: 10px; font-size: 1.2rem; color: var(--cyan); }
+  .tile .sym { font-size: clamp(2.2rem, 8vw, 4rem); line-height: 1; }
+  .tile .name { margin-top: 8px; font-weight: 700; font-size: clamp(.8rem, 2.4vw, 1.05rem); text-align: center; overflow-wrap: anywhere; }
+  .tile .tag { margin-top: 4px; font-size: .72rem; color: var(--red); letter-spacing: .08em; }
+  .tile.cleared { background: var(--panel); border-color: var(--green); box-shadow: none; }
+  .tile.cleared .tag { color: var(--green); }
   .tile.just { animation: pop 1.2s ease; }
   @keyframes pop {
-    0% { transform: scale(1); } 30% { transform: scale(1.18) rotate(-4deg); }
-    60% { transform: scale(.96) rotate(3deg); } 100% { transform: scale(1); }
+    0% { transform: scale(1); } 30% { transform: scale(1.14) rotate(-3deg); }
+    60% { transform: scale(.97) rotate(2deg); } 100% { transform: scale(1); }
   }
+  .warp-wrap { margin-top: 24px; text-align: center; }
+  #warpBtn {
+    width: 100%; min-height: 72px; font-family: "Orbitron", sans-serif; font-size: 1.3rem; border-radius: 16px; border: 2px solid #3a4170;
+    background: #1a1e40; color: var(--muted); cursor: not-allowed;
+  }
+  #warpBtn:not(:disabled) { cursor: pointer; color: #04121a; background: linear-gradient(90deg, var(--cyan), #b89cff); border-color: #fff; animation: ready 1.2s ease-in-out infinite; }
+  @keyframes ready { 50% { box-shadow: 0 0 34px rgba(94,231,255,.9); } }
 
-  .modal { position: fixed; inset: 0; background: rgba(2,3,12,.75); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
-  .modal.show { display: flex; }
-  .modal .box { background: var(--panel); color: var(--pale); border-radius: 22px; padding: 28px; max-width: 520px; width: 100%; text-align: center; border: 2px solid var(--cyan); box-shadow: 0 0 40px rgba(94,231,255,.4); }
-  .modal .sym { font-size: 4rem; }
-  .modal h2 { font-family: "Orbitron", sans-serif; font-size: 1.7rem; margin: 6px 0 12px; color: var(--cyan); }
-  .modal .content { font-size: 1.3rem; line-height: 1.5; }
+  /* Alert detail */
+  .modal { position: fixed; inset: 0; background: rgba(2,3,12,.78); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  .modal .box { background: var(--panel); border-radius: 20px; padding: 24px; max-width: 520px; width: 100%; max-height: calc(100vh - 32px); overflow-y: auto; text-align: center; border: 2px solid var(--red); }
+  .modal .box.cleared { border-color: var(--green); }
+  .modal .sym { font-size: 3.6rem; }
+  .modal h2 { font-size: 1.5rem; margin: 6px 0 4px; color: var(--text); }
+  .modal .state { font-weight: 700; letter-spacing: .08em; font-size: .85rem; color: var(--red); margin-bottom: 12px; }
+  .box.cleared .state { color: var(--green); }
+  .modal .content { font-size: 1.2rem; line-height: 1.5; }
+  #codeForm { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  #codeInput {
+    flex: 1 1 180px; min-width: 0; font-family: "Orbitron", sans-serif; font-size: 1.2rem; text-align: center; padding: 12px; border-radius: 12px;
+    border: 2px solid var(--cyan); background: #0a0d24; color: var(--text);
+  }
+  #codeForm .btn { box-shadow: none; padding: 12px 24px; }
+  #codeError { color: var(--red); font-weight: 700; min-height: 1.5em; margin-top: 10px; }
+  .shake { animation: shake .4s; }
+  @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+  #mClose { margin-top: 14px; }
 
-  .banner { display: none; text-align: center; font-size: 1.5rem; font-weight: 700; color: var(--cyan); margin-top: 24px; }
-  .banner.show { display: block; }
-  .status { position: fixed; bottom: 8px; right: 12px; font-size: .75rem; opacity: .6; z-index: 2; }
-  .hidden { display: none; }
+  /* Ending */
+  #ending { position: fixed; inset: 0; z-index: 20; background: #000; }
+  #warpCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .end-text { position: absolute; left: 16px; right: 16px; text-align: center; opacity: 0; transition: opacity 1.2s; pointer-events: none; }
+  .end-text.show { opacity: 1; }
+  #engaging { top: 45%; font-family: "Orbitron", sans-serif; color: var(--cyan); font-size: clamp(1.1rem, 4vw, 2rem); }
+  #endFinal { bottom: 7%; }
+  #endFinal h2 { color: var(--cyan); font-size: clamp(1.4rem, 5vw, 2.6rem); margin: 0 0 8px; text-shadow: 0 0 18px rgba(94,231,255,.7); }
+  #endFinal p { font-size: clamp(1.05rem, 3vw, 1.5rem); margin: 0; text-shadow: 0 1px 6px #000; }
+
+  .status { position: fixed; bottom: 8px; right: 12px; font-size: .75rem; opacity: .65; z-index: 2; }
 </style>
 </head>
 <body>
 <div class="stars" id="stars"></div>
-<main>
-  <h1 id="title"></h1>
 
-  <section id="intro" class="card intro hidden">
-    <div id="introText"></div>
-    <button class="btn" id="startBtn">Begin mission</button>
-  </section>
+<section id="logon">
+  <h1 id="logonShip"></h1>
+  <p>Stasis cycle interrupted</p>
+  <button class="btn" id="logonBtn">Log on</button>
+</section>
 
-  <section id="game" class="hidden">
-    <div class="progress"><span id="count"></span><div class="bar"><div id="barFill"></div></div></div>
-    <div class="grid" id="grid"></div>
-    <div class="banner" id="finale"></div>
-  </section>
-</main>
+<div id="console" hidden>
+  <header>
+    <div class="ship" id="headerShip"></div>
+    <div class="sub">Ship's Computer</div>
+  </header>
+  <nav>
+    <button data-view="messages">Messages</button>
+    <button data-view="crew">Crew Manifest</button>
+    <button data-view="ship">About the Ship</button>
+    <button data-view="alerts">Alerts <span class="badge" id="badge" aria-label="active alerts" hidden></span></button>
+  </nav>
+  <main>
+    <section id="view-messages" hidden>
+      <h2>Messages</h2>
+      <div id="messageList"></div>
+    </section>
+    <section id="view-crew" hidden>
+      <h2>Crew Manifest</h2>
+      <div class="card"><table class="rows"><tbody id="crewRows"></tbody></table></div>
+    </section>
+    <section id="view-ship" hidden>
+      <h2>About the Ship</h2>
+      <div class="card"><table class="rows"><tbody id="shipRows"></tbody></table></div>
+    </section>
+    <section id="view-alerts" hidden>
+      <h2>Alerts</h2>
+      <div class="grid" id="grid"></div>
+      <div class="warp-wrap"><button id="warpBtn" disabled></button></div>
+    </section>
+  </main>
+</div>
 
-<div class="modal" id="modal">
-  <div class="box">
+<div class="modal" id="modal" hidden>
+  <div class="box" id="mBox">
     <div class="sym" id="mSym"></div>
     <h2 id="mTitle"></h2>
+    <div class="state" id="mState"></div>
     <div class="content" id="mContent"></div>
+    <form id="codeForm" autocomplete="off" hidden>
+      <input id="codeInput" aria-label="Enter code" placeholder="Enter code" autocapitalize="characters" autocorrect="off" spellcheck="false">
+      <button class="btn" type="submit">Submit</button>
+    </form>
+    <div id="codeError" role="alert"></div>
     <button class="btn" id="mClose">Close</button>
   </div>
 </div>
+
+<div id="ending" hidden>
+  <canvas id="warpCanvas"></canvas>
+  <div class="end-text" id="engaging">ENGAGING WARP DRIVE</div>
+  <div class="end-text" id="endFinal"><h2 id="endTitle"></h2><p id="endBody"></p></div>
+</div>
+
 <div class="status" id="status">Connecting…</div>
 
 <script src="config.js"></script>
 <script src="state.js"></script>
 <script>
   const $ = (id) => document.getElementById(id);
-  const STARTED_KEY = "quest-started:" + GAME_ID;
-  const SEEN_KEY = "quest-seen:" + GAME_ID;
+  const LOGGED_ON_KEY = "quest-logged-on:" + GAME_ID;
+  const RESET_KEY = "quest-reset:" + GAME_ID;
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
-    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+    remove(k) { try { localStorage.removeItem(k); } catch (e) {} }
   };
-  let seen = new Set(JSON.parse(store.get(SEEN_KEY) || "[]"));
-  let unlocked = {};
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let cleared = {};
+  let warped = false;
   let firstLoad = true;
   let audio = null;
-
-  $("title").textContent = GAME.title;
-  $("introText").innerHTML = GAME.intro.map((p) => "<p>" + p + "</p>").join("");
-  $("finale").textContent = GAME.finale;
+  let openAlert = null;
+  let stopTyping = null;
 
   // Stars
   for (let i = 0; i < 90; i++) {
@@ -142,30 +240,171 @@
     $("stars").appendChild(s);
   }
 
-  // Build tiles
-  const tileEls = {};
-  TILES.forEach((t) => {
-    const b = document.createElement("button");
-    b.className = "tile locked";
-    b.innerHTML = '<div class="sym">' + t.symbol + '</div><div class="name">' + t.title + "</div>";
-    b.addEventListener("click", () => openTile(t));
-    $("grid").appendChild(b);
-    tileEls[t.id] = b;
-  });
+  // Static screens
+  $("logonShip").textContent = SHIP.name;
+  $("headerShip").textContent = SHIP.name;
+  $("endTitle").textContent = ENDING.title;
+  $("endBody").textContent = ENDING.text;
 
-  function showGame() {
-    $("intro").classList.add("hidden");
-    $("game").classList.remove("hidden");
+  function fillRows(el, rows) {
+    rows.forEach(([label, value]) => {
+      const tr = document.createElement("tr");
+      const th = document.createElement("th");
+      const td = document.createElement("td");
+      th.textContent = label;
+      td.textContent = value;
+      tr.append(th, td);
+      el.appendChild(tr);
+    });
   }
-  if (store.get(STARTED_KEY)) showGame(); else $("intro").classList.remove("hidden");
-  $("startBtn").addEventListener("click", () => {
-    store.set(STARTED_KEY, "1");
-    initAudio();
-    showGame();
-  });
-  // Audio needs a tap before it can play, so unlock it on the first touch anywhere.
-  document.addEventListener("pointerdown", initAudio, { once: true });
+  fillRows($("crewRows"), CREW.map((c) => [c.role, c.name]));
+  fillRows($("shipRows"), [["Name", SHIP.name]].concat(SHIP.details));
 
+  // Messages. Pass typeFirst to type out the first message.
+  function renderMessages(typeFirst) {
+    if (stopTyping) stopTyping();
+    const list = $("messageList");
+    list.innerHTML = "";
+    MESSAGES.forEach((m, i) => {
+      const card = document.createElement("article");
+      card.className = "card";
+      const head = document.createElement("div");
+      head.className = "msg-head";
+      head.textContent = "From: " + m.from;
+      const subject = document.createElement("div");
+      subject.className = "msg-subject";
+      subject.textContent = m.subject;
+      const body = document.createElement("div");
+      body.className = "msg-body";
+      const paras = m.body.map((text) => {
+        const p = document.createElement("p");
+        p.textContent = text;
+        body.appendChild(p);
+        return p;
+      });
+      card.append(head, subject, body);
+      if (i === 0) {
+        const actions = document.createElement("div");
+        actions.className = "msg-actions";
+        const toAlerts = document.createElement("button");
+        toAlerts.className = "link-btn";
+        toAlerts.textContent = "View alerts";
+        toAlerts.addEventListener("click", () => showView("alerts"));
+        actions.appendChild(toAlerts);
+        if (typeFirst && !reducedMotion) typeOut(m.body, paras, actions);
+        card.appendChild(actions);
+      }
+      list.appendChild(card);
+    });
+  }
+
+  function typeOut(texts, paras, actions) {
+    paras.forEach((p) => { p.textContent = ""; });
+    const skip = document.createElement("button");
+    skip.className = "link-btn";
+    skip.textContent = "Skip";
+    actions.prepend(skip);
+    let pi = 0, ci = 0;
+    const finish = () => {
+      clearInterval(timer);
+      paras.forEach((p, i) => { p.textContent = texts[i]; p.classList.remove("caret"); });
+      skip.remove();
+      stopTyping = null;
+    };
+    const timer = setInterval(() => {
+      if (pi >= paras.length) return finish();
+      ci++;
+      paras[pi].textContent = texts[pi].slice(0, ci);
+      paras[pi].classList.add("caret");
+      if (ci >= texts[pi].length) {
+        paras[pi].classList.remove("caret");
+        pi++; ci = 0;
+      }
+    }, 28);
+    skip.addEventListener("click", finish);
+    stopTyping = finish;
+  }
+
+  // Navigation
+  const navButtons = document.querySelectorAll("nav button");
+  navButtons.forEach((b) => b.addEventListener("click", () => showView(b.dataset.view)));
+  function showView(view) {
+    navButtons.forEach((b) => b.classList.toggle("active", b.dataset.view === view));
+    ["messages", "crew", "ship", "alerts"].forEach((v) => { $("view-" + v).hidden = v !== view; });
+    window.scrollTo(0, 0);
+  }
+
+  function showConsole(firstTime) {
+    $("logon").hidden = true;
+    $("console").hidden = false;
+    renderMessages(firstTime);
+    showView("messages");
+  }
+  function showLogon() {
+    closeAlert();
+    if (stopTyping) stopTyping();
+    $("console").hidden = true;
+    $("logon").hidden = false;
+  }
+  if (store.get(LOGGED_ON_KEY)) showConsole(false);
+  $("logonBtn").addEventListener("click", () => {
+    store.set(LOGGED_ON_KEY, "1");
+    initAudio();
+    showConsole(true);
+  });
+
+  // Alert tiles
+  const tileEls = {};
+  ALERTS.forEach((a) => {
+    const b = document.createElement("button");
+    b.className = "tile";
+    b.innerHTML = '<div class="sym"></div><div class="name"></div><div class="tag"></div>';
+    b.querySelector(".sym").textContent = a.symbol;
+    b.querySelector(".name").textContent = a.title;
+    b.addEventListener("click", () => { openAlert = a; renderAlert(true); });
+    $("grid").appendChild(b);
+    tileEls[a.id] = b;
+  });
+
+  function renderAlert(fresh) {
+    const a = openAlert;
+    if (!a) return;
+    const isCleared = !!cleared[a.id];
+    $("modal").hidden = false;
+    $("mBox").classList.toggle("cleared", isCleared);
+    $("mSym").textContent = a.symbol;
+    $("mTitle").textContent = a.title;
+    $("mState").textContent = isCleared ? "CLEARED" : "ALERT ACTIVE";
+    $("mContent").innerHTML = isCleared ? a.clearedText : a.description;
+    $("codeForm").hidden = isCleared || !a.code;
+    if (fresh || isCleared) { $("codeError").textContent = ""; $("codeInput").value = ""; }
+    if (fresh && a.code && !isCleared) $("codeInput").focus();
+  }
+  function closeAlert() {
+    openAlert = null;
+    $("modal").hidden = true;
+  }
+  $("mClose").addEventListener("click", closeAlert);
+  $("modal").addEventListener("click", (e) => { if (e.target.id === "modal") closeAlert(); });
+
+  const normaliseCode = (s) => String(s).replace(/\s+/g, "").toUpperCase();
+  $("codeForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const a = openAlert;
+    if (!a) return;
+    if (normaliseCode($("codeInput").value) === normaliseCode(a.code)) {
+      GameState.setCleared(a.id, true).catch(() => {
+        $("codeError").textContent = "Transmission failed. Try again.";
+      });
+    } else {
+      $("codeError").textContent = "INVALID CODE";
+      const form = $("codeForm");
+      form.classList.remove("shake"); void form.offsetWidth; form.classList.add("shake");
+    }
+  });
+
+  // Audio needs a tap before it can play, so set it up on the first touch anywhere.
+  document.addEventListener("pointerdown", initAudio, { once: true });
   function initAudio() {
     if (audio) return;
     try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
@@ -182,46 +421,162 @@
       o.connect(g).connect(audio.destination); o.start(t0); o.stop(t0 + 0.55);
     });
   }
-
-  function openTile(t) {
-    if (!unlocked[t.id]) return;
-    seen.add(t.id);
-    store.set(SEEN_KEY, JSON.stringify([...seen]));
-    render();
-    $("mSym").textContent = t.symbol;
-    $("mTitle").textContent = t.title;
-    $("mContent").innerHTML = t.reveal;
-    $("modal").classList.add("show");
+  function warpSound() {
+    if (!audio) return;
+    const o = audio.createOscillator(), g = audio.createGain(), t0 = audio.currentTime;
+    o.type = "sawtooth";
+    o.frequency.setValueAtTime(50, t0);
+    o.frequency.exponentialRampToValueAtTime(1200, t0 + 3.2);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.12, t0 + 2.8);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 3.6);
+    o.connect(g).connect(audio.destination); o.start(t0); o.stop(t0 + 3.7);
   }
-  $("mClose").addEventListener("click", () => $("modal").classList.remove("show"));
-  $("modal").addEventListener("click", (e) => { if (e.target.id === "modal") $("modal").classList.remove("show"); });
 
-  function render(newlyUnlocked = []) {
-    let n = 0;
-    TILES.forEach((t) => {
-      const el = tileEls[t.id];
-      const isOpen = !!unlocked[t.id];
-      if (isOpen) n++;
-      el.classList.toggle("locked", !isOpen);
-      el.classList.toggle("open", isOpen);
-      el.classList.toggle("seen", isOpen && seen.has(t.id));
-      if (newlyUnlocked.includes(t.id)) {
+  function render(newlyCleared) {
+    let active = 0;
+    ALERTS.forEach((a) => {
+      const el = tileEls[a.id];
+      const isCleared = !!cleared[a.id];
+      if (!isCleared) active++;
+      el.classList.toggle("cleared", isCleared);
+      el.querySelector(".tag").textContent = isCleared ? "CLEARED" : "ACTIVE";
+      if (newlyCleared.includes(a.id)) {
         el.classList.remove("just"); void el.offsetWidth; el.classList.add("just");
       }
     });
-    $("count").textContent = n + " of " + TILES.length + " tiles unlocked";
-    $("barFill").style.width = (100 * n / TILES.length) + "%";
-    $("finale").classList.toggle("show", n === TILES.length);
+    $("badge").textContent = active;
+    $("badge").hidden = active === 0;
+    $("warpBtn").disabled = active > 0;
+    $("warpBtn").textContent = active > 0
+      ? "WARP OFFLINE: " + active + (active === 1 ? " ALERT ACTIVE" : " ALERTS ACTIVE")
+      : "ENGAGE WARP DRIVE";
+  }
+
+  $("warpBtn").addEventListener("click", () => {
+    GameState.setWarped().catch(() => {
+      $("status").textContent = "⚠ Could not reach the database";
+    });
+  });
+
+  // Ending: warp streaks, then Earth grows as the ship flies home.
+  const WARP_END = 3.6, ARRIVAL = 5.5;
+  let warpFrame = null;
+
+  function playEnding(skipToEnd) {
+    closeAlert();
+    if (warpFrame) cancelAnimationFrame(warpFrame);
+    $("ending").hidden = false;
+    const canvas = $("warpCanvas");
+    const ctx = canvas.getContext("2d");
+    const size = () => { canvas.width = innerWidth; canvas.height = innerHeight; };
+    size();
+    window.onresize = size;
+    const stars = Array.from({ length: 320 }, () => ({
+      x: (Math.random() - .5) * 2000, y: (Math.random() - .5) * 2000, z: Math.random() * 1000 + 1
+    }));
+    const skip = skipToEnd || reducedMotion;
+    const start = performance.now() - (skip ? (WARP_END + ARRIVAL + 1) * 1000 : 0);
+    let last = performance.now();
+    $("engaging").classList.toggle("show", !skip);
+    $("endFinal").classList.toggle("show", skip);
+    if (!skip) warpSound();
+
+    function frame(now) {
+      const t = (now - start) / 1000;
+      const dt = Math.min((now - last) / 1000, .05);
+      last = now;
+      const w = canvas.width, h = canvas.height, cx = w / 2, cy = h * .42;
+      const speed = t < WARP_END ? 60 + Math.pow(t / WARP_END, 3) * 2600 : 40;
+      const streak = t < WARP_END ? Math.min(speed * .05, 160) : 1;
+      ctx.fillStyle = "#02030c";
+      ctx.fillRect(0, 0, w, h);
+      ctx.lineCap = "round";
+      stars.forEach((s) => {
+        s.z -= speed * dt;
+        if (s.z < 1) { s.z = 1000; s.x = (Math.random() - .5) * 2000; s.y = (Math.random() - .5) * 2000; }
+        const sx = cx + s.x / s.z * 300, sy = cy + s.y / s.z * 300;
+        const px = cx + s.x / (s.z + streak) * 300, py = cy + s.y / (s.z + streak) * 300;
+        ctx.strokeStyle = t < WARP_END ? "#bfefff" : "#ffffff";
+        ctx.lineWidth = t < WARP_END ? 1.6 : 1.3;
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(sx + .1, sy); ctx.stroke();
+      });
+      if (t >= WARP_END - .4 && $("engaging").classList.contains("show")) $("engaging").classList.remove("show");
+      if (t >= WARP_END) {
+        const e = Math.min((t - WARP_END) / ARRIVAL, 1);
+        drawEarth(ctx, cx, cy, Math.min(w, h) * (.02 + .3 * (1 - Math.pow(1 - e, 3))));
+        if (e < 1) drawShip(ctx, cx, h * .95 + (cy - h * .95) * e, 70 * (1 - e) + 3);
+        if (e >= 1) $("endFinal").classList.add("show");
+      }
+      const flash = 1 - Math.abs(t - WARP_END) / .35;
+      if (flash > 0) {
+        ctx.fillStyle = "rgba(255,255,255," + flash + ")";
+        ctx.fillRect(0, 0, w, h);
+      }
+      warpFrame = requestAnimationFrame(frame);
+    }
+    warpFrame = requestAnimationFrame(frame);
+  }
+
+  function drawEarth(ctx, x, y, r) {
+    const glow = ctx.createRadialGradient(x, y, r * .9, x, y, r * 1.3);
+    glow.addColorStop(0, "rgba(94,190,255,.55)");
+    glow.addColorStop(1, "rgba(94,190,255,0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(x, y, r * 1.3, 0, Math.PI * 2); ctx.fill();
+    ctx.save();
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.clip();
+    const sea = ctx.createRadialGradient(x - r * .35, y - r * .35, r * .1, x, y, r);
+    sea.addColorStop(0, "#4aa8ff");
+    sea.addColorStop(1, "#0b3a8c");
+    ctx.fillStyle = sea;
+    ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    ctx.fillStyle = "#3fa35c";
+    [[-.35, -.3, .4, .28], [.3, .1, .32, .42], [-.3, .4, .28, .2], [.45, -.5, .22, .14]].forEach(([dx, dy, rx, ry]) => {
+      ctx.beginPath(); ctx.ellipse(x + dx * r, y + dy * r, rx * r, ry * r, .5, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.fillStyle = "#f4fbff";
+    ctx.beginPath(); ctx.ellipse(x, y - r * .97, r * .5, r * .13, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawShip(ctx, x, y, size) {
+    ctx.fillStyle = "#ffb347";
+    ctx.beginPath(); ctx.ellipse(x, y + size * .62, size * .14, size * .34, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#dfe7ff";
+    ctx.beginPath();
+    ctx.moveTo(x, y - size * .6);
+    ctx.lineTo(x + size * .42, y + size * .5);
+    ctx.lineTo(x, y + size * .3);
+    ctx.lineTo(x - size * .42, y + size * .5);
+    ctx.closePath(); ctx.fill();
+  }
+
+  function hideEnding() {
+    if (warpFrame) cancelAnimationFrame(warpFrame);
+    warpFrame = null;
+    window.onresize = null;
+    $("ending").hidden = true;
   }
 
   GameState.subscribe((state) => {
-    const fresh = Object.keys(state).filter((id) => state[id] && !unlocked[id]);
-    // Forget "seen" ticks for tiles that were re-locked (e.g. after a reset).
-    seen = new Set([...seen].filter((id) => state[id]));
-    store.set(SEEN_KEY, JSON.stringify([...seen]));
-    unlocked = state;
+    const fresh = Object.keys(state.cleared).filter((id) => state.cleared[id] && !cleared[id]);
+    cleared = state.cleared;
     render(firstLoad ? [] : fresh);
+    if (openAlert) renderAlert(false);
     if (!firstLoad && fresh.length) chime();
+
+    // Mission Control pressed Reset: go back to the log-on screen.
+    const resetAt = state.resetAt ? String(state.resetAt) : "";
+    if (resetAt !== (store.get(RESET_KEY) || "")) {
+      store.set(RESET_KEY, resetAt);
+      store.remove(LOGGED_ON_KEY);
+      showLogon();
+    }
+
+    if (state.warped && !warped) playEnding(firstLoad);
+    if (!state.warped && warped) hideEnding();
+    warped = !!state.warped;
     firstLoad = false;
   }, (connected) => {
     $("status").textContent = (GameState.isDemo ? "Demo mode · " : "") + (connected ? "● Live" : "○ Reconnecting…");
