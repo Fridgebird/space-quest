@@ -131,6 +131,22 @@
   @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
   #mClose { margin-top: 14px; }
 
+  /* Wiring puzzle */
+  .modal .box.wide { max-width: 640px; }
+  #wireSvg { width: 100%; height: auto; max-height: 55vh; display: block; margin: 12px auto 0; touch-action: manipulation; }
+  .term { cursor: pointer; }
+  .term .hit { fill: transparent; }
+  .term .post { fill: #0a0d24; stroke: var(--cyan); stroke-width: 3; }
+  .term.sel .post { fill: var(--cyan); animation: selpulse .8s ease-in-out infinite alternate; }
+  @keyframes selpulse { to { fill: #0a0d24; } }
+  .term text { fill: var(--text); font-family: "Orbitron", sans-serif; font-size: 20px; dominant-baseline: central; }
+  .box.cleared .term { cursor: default; }
+  .box.cleared .term .post { stroke: var(--green); }
+  .wire { fill: none; stroke: currentColor; stroke-width: 6; stroke-linecap: round; }
+  .wire.powered { filter: drop-shadow(0 0 5px currentColor); }
+  .wire-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 12px; }
+  .wire-actions .btn { box-shadow: none; padding: 12px 28px; }
+
   /* Ending */
   #ending { position: fixed; inset: 0; z-index: 20; background: #000; }
   #warpCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
@@ -195,6 +211,13 @@
       <input id="codeInput" aria-label="Enter code" placeholder="Enter code" autocapitalize="characters" autocorrect="off" spellcheck="false">
       <button class="btn" type="submit">Submit</button>
     </form>
+    <div id="wirePanel" hidden>
+      <svg id="wireSvg" role="group" aria-label="Wiring panel"></svg>
+      <div class="wire-actions" id="wireActions">
+        <button class="link-btn" id="wireReset">Disconnect all</button>
+        <button class="btn" id="wirePower">Power on</button>
+      </div>
+    </div>
     <div id="codeError" role="alert"></div>
     <button class="btn" id="mClose">Close</button>
   </div>
@@ -377,9 +400,89 @@
     $("mState").textContent = isCleared ? "CLEARED" : "ALERT ACTIVE";
     $("mContent").innerHTML = isCleared ? a.clearedText : a.description;
     $("codeForm").hidden = isCleared || !a.code;
-    if (fresh || isCleared) { $("codeError").textContent = ""; $("codeInput").value = ""; }
+    $("mBox").classList.toggle("wide", !!a.wiring);
+    if (fresh || isCleared) { $("codeError").textContent = ""; $("codeInput").value = ""; wireSelected = null; }
+    renderWiring(a, isCleared);
     if (fresh && a.code && !isCleared) $("codeInput").focus();
   }
+
+  // Wiring puzzles: tap a left terminal, then a right terminal, to connect them.
+  const wiring = {}; // alertId -> { leftLabel: rightLabel }
+  let wireSelected = null;
+  const WIRE_COLOURS = ["#ff5d73", "#ffd166", "#4be3a0", "#5ee7ff", "#b89cff", "#ff9f43", "#f78fb3", "#a3e635"];
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  function renderWiring(a, isCleared) {
+    $("wirePanel").hidden = !a.wiring;
+    if (!a.wiring) return;
+    const w = a.wiring;
+    const links = isCleared ? w.solution : (wiring[a.id] = wiring[a.id] || {});
+    const n = Math.max(w.left.length, w.right.length);
+    const LX = 80, RX = 320, y = (i) => 36 + i * 64;
+    let svg = "";
+    w.left.forEach((L, i) => {
+      const j = w.right.map(String).indexOf(String(links[L]));
+      if (j < 0) return;
+      svg += '<path class="wire' + (isCleared ? " powered" : "") + '" style="color:' + WIRE_COLOURS[i % WIRE_COLOURS.length] + '" d="M' + LX + " " + y(i) +
+        " C " + (LX + 120) + " " + y(i) + ", " + (RX - 120) + " " + y(j) + ", " + RX + " " + y(j) + '"/>';
+    });
+    const term = (side, label, i, x) =>
+      '<g class="term' + (side === "L" && wireSelected === label ? " sel" : "") + '" data-side="' + side + '" data-i="' + i + '">' +
+      '<circle class="hit" cx="' + x + '" cy="' + y(i) + '" r="30"/>' +
+      '<circle class="post" cx="' + x + '" cy="' + y(i) + '" r="15"/>' +
+      '<text x="' + (side === "L" ? x - 28 : x + 28) + '" y="' + y(i) + '" text-anchor="' + (side === "L" ? "end" : "start") + '">' + esc(label) + "</text></g>";
+    w.left.forEach((L, i) => { svg += term("L", L, i, LX); });
+    w.right.forEach((R, i) => { svg += term("R", R, i, RX); });
+    $("wireSvg").setAttribute("viewBox", "0 0 400 " + (n * 64 + 8));
+    $("wireSvg").innerHTML = svg;
+    $("wireActions").hidden = isCleared;
+  }
+
+  $("wireSvg").addEventListener("click", (e) => {
+    const g = e.target.closest(".term");
+    const a = openAlert;
+    if (!g || !a || !a.wiring || cleared[a.id]) return;
+    const links = wiring[a.id];
+    const i = Number(g.dataset.i);
+    if (g.dataset.side === "L") {
+      const L = a.wiring.left[i];
+      wireSelected = wireSelected === L ? null : L;
+    } else {
+      const R = a.wiring.right[i];
+      // A right terminal takes one wire, so drop any wire already on it.
+      for (const k in links) if (links[k] === R) delete links[k];
+      if (wireSelected) links[wireSelected] = R;
+      wireSelected = null;
+    }
+    $("codeError").textContent = "";
+    renderWiring(a, false);
+  });
+  $("wireReset").addEventListener("click", () => {
+    if (!openAlert) return;
+    wiring[openAlert.id] = {};
+    wireSelected = null;
+    $("codeError").textContent = "";
+    renderWiring(openAlert, false);
+  });
+  $("wirePower").addEventListener("click", () => {
+    const a = openAlert;
+    if (!a || !a.wiring) return;
+    const links = wiring[a.id] || {};
+    if (a.wiring.left.some((L) => links[L] == null)) {
+      $("codeError").textContent = "Connect every terminal first.";
+      return;
+    }
+    if (a.wiring.left.every((L) => String(links[L]) === String(a.wiring.solution[L]))) {
+      GameState.setCleared(a.id, true).catch(() => {
+        $("codeError").textContent = "Transmission failed. Try again.";
+      });
+    } else {
+      $("codeError").textContent = "CIRCUIT FAULT: POWER FAILED";
+      buzz();
+      const p = $("wirePanel");
+      p.classList.remove("shake"); void p.offsetWidth; p.classList.add("shake");
+    }
+  });
   function closeAlert() {
     openAlert = null;
     $("modal").hidden = true;
@@ -420,6 +523,14 @@
       g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
       o.connect(g).connect(audio.destination); o.start(t0); o.stop(t0 + 0.55);
     });
+  }
+  function buzz() {
+    if (!audio) return;
+    const o = audio.createOscillator(), g = audio.createGain(), t0 = audio.currentTime;
+    o.type = "square"; o.frequency.value = 90;
+    g.gain.setValueAtTime(0.12, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
+    o.connect(g).connect(audio.destination); o.start(t0); o.stop(t0 + 0.5);
   }
   function warpSound() {
     if (!audio) return;

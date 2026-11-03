@@ -64,7 +64,10 @@
         '<button class="toggle"></button>';
       row.querySelector(".sym").textContent = a.symbol;
       row.querySelector(".t").textContent = a.title;
-      row.querySelector(".r").textContent = a.code ? "Crew enter code: " + a.code : "You clear this one";
+      row.querySelector(".r").textContent =
+        a.code ? "Crew enter code: " + a.code
+        : a.wiring ? "Crew wire: " + a.wiring.left.map((L) => L + "→" + a.wiring.solution[L]).join(", ")
+        : "You clear this one";
       const btn = row.querySelector(".toggle");
       btn.addEventListener("click", () => {
         const clear = !cleared[a.id];

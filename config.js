@@ -76,8 +76,11 @@ window.ENDING = {
 //    description  What the crew see when they tap the active alert.
 //    clearedText  What they see when they tap it after it's cleared.
 //    code         OPTIONAL. If set, the crew clear this alert themselves by entering
-//                 this code (capitals and spaces don't matter). If left out,
-//                 only you can clear it, from Mission Control.
+//                 this code (capitals and spaces don't matter).
+//    wiring       OPTIONAL. If set, the crew clear this alert by wiring terminals together
+//                 on screen. `left` and `right` are the terminal labels, and `solution`
+//                 says which right terminal each left terminal connects to.
+//    If neither is set, only you can clear the alert, from Mission Control.
 window.ALERTS = [
   {
     id: "infestation", symbol: "🐛", title: "Infestation",
@@ -109,5 +112,15 @@ window.ALERTS = [
     id: "hull", symbol: "🛡️", title: "Hull Breach",
     description: "Placeholder: details of the hull breach task.",
     clearedText: "Hull sealed."
+  },
+  {
+    id: "wiring", symbol: "⚡", title: "Warp Core Wiring",
+    description: "Warp core power coupling disconnected. Restore the wiring using the ship's wiring schematic. Tap a terminal on the left, then a terminal on the right, to connect them.",
+    clearedText: "Power restored to the warp core.",
+    wiring: {
+      left: ["A", "B", "C", "D", "E", "F"],
+      right: ["1", "2", "3", "4", "5", "6"],
+      solution: { A: "4", B: "1", C: "6", D: "2", E: "5", F: "3" }
+    }
   }
 ];
