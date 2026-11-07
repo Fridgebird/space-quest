@@ -80,8 +80,16 @@ window.ENDING = {
 //    wiring       OPTIONAL. If set, the crew clear this alert by wiring terminals together
 //                 on screen. `left` and `right` are the terminal labels, and `solution`
 //                 says which right terminal each left terminal connects to.
-//    If neither is set, only you can clear the alert, from Mission Control.
+//    checklist    OPTIONAL. If true, tapping the alert opens the Technobabble Checklist
+//                 control panel (see checklist-design.md), and the crew clear it there.
+//    If none of these is set, only you can clear the alert, from Mission Control.
 window.ALERTS = [
+  {
+    id: "checklist", symbol: "🎛️", title: "Technobabble Checklist",
+    description: "Ship systems are out of alignment. Complete the technobabble checklists.",
+    clearedText: "Tachyon pulse initiated. All systems nominal.",
+    checklist: true
+  },
   {
     id: "infestation", symbol: "🐛", title: "Infestation",
     description: "Placeholder: details of the infestation task.",

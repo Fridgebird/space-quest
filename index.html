@@ -158,6 +158,52 @@
   #endFinal p { font-size: clamp(1.05rem, 3vw, 1.5rem); margin: 0; text-shadow: 0 1px 6px #000; }
 
   .status { position: fixed; bottom: 8px; right: 12px; font-size: .75rem; opacity: .65; z-index: 2; }
+
+  /* Technobabble Checklist */
+  .back-btn { margin-bottom: 14px; }
+  .cl-top { position: sticky; top: 0; z-index: 3; padding-top: 8px; background: rgba(8,10,28,.96); margin: 0 -4px; padding-left: 4px; padding-right: 4px; }
+  .cl-banner[hidden] { display: none; }
+  .cl-banner {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    padding: 12px 16px; margin-bottom: 12px; border-radius: 12px; background: #5a0f1c; border: 2px solid var(--red);
+    font-family: "Orbitron", sans-serif; font-size: 1rem; animation: alarm 1s steps(2) infinite;
+  }
+  .cl-banner.armed { background: #4a3a05; border-color: #ffd166; animation: none; }
+  @keyframes alarm { 50% { background: #2a0810; } }
+  .cl-log { background: #05070f; border: 1px solid rgba(94,231,255,.3); border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; min-height: 2.6em; font-family: ui-monospace, Consolas, monospace; font-size: .95rem; }
+  .cl-msg { padding: 2px 0; }
+  .cl-msg.old { opacity: .5; font-size: .85rem; }
+  .cl-msg.old:nth-child(n+3) { display: none; }
+  .cl-msg.ok { color: var(--green); }
+  .cl-msg.warn { color: #ffd166; }
+  .cl-msg.err { color: var(--red); }
+  .cl-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 600px) { .cl-grid { grid-template-columns: minmax(0, 1fr); } }
+  .cl-card { background: rgba(21,26,58,.85); border: 1px solid rgba(94,231,255,.3); border-radius: 14px; padding: 12px 14px; min-width: 0; }
+  .cl-card.wide { grid-column: 1 / -1; }
+  .cl-card.dead { border-color: #5a2030; }
+  .cl-card.dead .cl-val { color: var(--red); }
+  .cl-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .cl-label { font-weight: 700; font-size: 1rem; overflow-wrap: anywhere; }
+  .cl-tags { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+  .cl-bus { font-size: .7rem; color: #ffd166; border: 1px solid #ffd166; border-radius: 6px; padding: 1px 5px; }
+  .cl-lock[hidden] { display: none; }
+  .cl-val { font-family: "Orbitron", sans-serif; color: var(--cyan); font-size: 1.15rem; margin: 6px 0 10px; overflow-wrap: anywhere; }
+  .cl-val.good { color: var(--green); }
+  .cl-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cl-seg, .cl-btn {
+    font: inherit; font-weight: 700; min-height: 44px; padding: 8px 14px; border-radius: 10px; cursor: pointer;
+    border: 1px solid #3a4170; background: #1a1e40; color: var(--text);
+  }
+  .cl-seg.on { background: var(--cyan); color: #04121a; border-color: var(--cyan); }
+  .cl-btn:active, .cl-seg:active { transform: translateY(2px); }
+  .cl-breaker { background: var(--red); border-color: #fff; font-family: "Exo 2", sans-serif; }
+  .cl-fire { width: 100%; min-height: 60px; font-family: "Orbitron", sans-serif; font-size: 1.15rem; background: var(--violet); border-color: #fff; }
+  .cl-input { flex: 1 1 90px; min-width: 0; min-height: 44px; font: inherit; font-size: 1.1rem; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--cyan); background: #0a0d24; color: var(--text); }
+  .cl-gauge { position: relative; height: 14px; border-radius: 999px; background: #0a0d24; border: 1px solid #3a4170; margin-bottom: 10px; overflow: hidden; }
+  .cl-gauge-fill { height: 100%; background: #ffd166; }
+  .cl-gauge-fill.in-range { background: var(--green); }
+  .cl-gauge-mark { position: absolute; top: 0; bottom: 0; left: 30%; width: 2px; background: var(--red); }
 </style>
 </head>
 <body>
@@ -198,6 +244,11 @@
       <div class="grid" id="grid"></div>
       <div class="warp-wrap"><button id="warpBtn" disabled></button></div>
     </section>
+    <section id="view-checklist" hidden>
+      <button class="link-btn back-btn" id="checklistBack">← Back to alerts</button>
+      <h2 id="checklistTitle"></h2>
+      <div id="checklistRoot"></div>
+    </section>
   </main>
 </div>
 
@@ -233,6 +284,7 @@
 
 <script src="config.js"></script>
 <script src="state.js"></script>
+<script src="checklist.js"></script>
 <script>
   const $ = (id) => document.getElementById(id);
   const LOGGED_ON_KEY = "quest-logged-on:" + GAME_ID;
@@ -352,8 +404,9 @@
   const navButtons = document.querySelectorAll("nav button");
   navButtons.forEach((b) => b.addEventListener("click", () => showView(b.dataset.view)));
   function showView(view) {
-    navButtons.forEach((b) => b.classList.toggle("active", b.dataset.view === view));
-    ["messages", "crew", "ship", "alerts"].forEach((v) => { $("view-" + v).hidden = v !== view; });
+    const navView = view === "checklist" ? "alerts" : view;
+    navButtons.forEach((b) => b.classList.toggle("active", b.dataset.view === navView));
+    ["messages", "crew", "ship", "alerts", "checklist"].forEach((v) => { $("view-" + v).hidden = v !== view; });
     window.scrollTo(0, 0);
   }
 
@@ -384,10 +437,25 @@
     b.innerHTML = '<div class="sym"></div><div class="name"></div><div class="tag"></div>';
     b.querySelector(".sym").textContent = a.symbol;
     b.querySelector(".name").textContent = a.title;
-    b.addEventListener("click", () => { openAlert = a; renderAlert(true); });
+    b.addEventListener("click", () => {
+      if (a.checklist && !cleared[a.id]) return showView("checklist");
+      openAlert = a; renderAlert(true);
+    });
     $("grid").appendChild(b);
     tileEls[a.id] = b;
   });
+
+  // The Technobabble Checklist has its own screen of controls.
+  const checklistAlert = ALERTS.find((a) => a.checklist);
+  if (checklistAlert) {
+    $("checklistTitle").textContent = checklistAlert.title;
+    Checklist.mount($("checklistRoot"), () => {
+      GameState.setCleared(checklistAlert.id, true).catch(() => {
+        $("status").textContent = "⚠ Could not reach the database";
+      });
+    });
+  }
+  $("checklistBack").addEventListener("click", () => showView("alerts"));
 
   function renderAlert(fresh) {
     const a = openAlert;
@@ -682,6 +750,7 @@
     if (resetAt !== (store.get(RESET_KEY) || "")) {
       store.set(RESET_KEY, resetAt);
       store.remove(LOGGED_ON_KEY);
+      Checklist.reset();
       showLogon();
     }
 

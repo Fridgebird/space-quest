@@ -67,6 +67,7 @@
       row.querySelector(".r").textContent =
         a.code ? "Crew enter code: " + a.code
         : a.wiring ? "Crew wire: " + a.wiring.left.map((L) => L + "→" + a.wiring.solution[L]).join(", ")
+        : a.checklist ? "Crew complete the checklist on the tablet"
         : "You clear this one";
       const btn = row.querySelector(".toggle");
       btn.addEventListener("click", () => {
