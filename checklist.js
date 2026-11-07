@@ -114,6 +114,11 @@ window.Checklist = (function () {
         S.erbium = false; S.turbineCoolUntil = now() + TURBINE_COOL_SECONDS * 1000;
         fail("turbine");
       } },
+    // Flipping the breaker always cycles the B bus, so the B bus controls go back to their
+    // starting values even if the bus was fine.
+    { id: "breaker", label: "Fuse breaker", kind: "btn", action: "Flip",
+      show: () => "ENGAGED",
+      press: () => { S.undervolt = false; S.rubidium = 100; S.radio = 980; S.crm = "Transmit"; } },
     { id: "deuterium", label: "Deuterium tank pressure", kind: "num", min: 0, max: 100,
       show: () => S.deuterium, lock: () => S.plasma !== 451,
       set: (v) => {
@@ -193,17 +198,17 @@ window.Checklist = (function () {
 
   function build(container) {
     container.innerHTML = "";
-    els.banner = el("div", "cl-banner");
-    els.bannerText = el("span");
-    els.breaker = el("button", "cl-btn cl-breaker", "Reset B bus breaker");
-    els.breaker.addEventListener("click", () => act(() => {
-      S.undervolt = false; S.rubidium = 100; S.radio = 980; S.crm = "Transmit";
-    }));
-    els.banner.append(els.bannerText, els.breaker);
+    // Two warning lights that are always there. Only B ever lights up, and nothing on
+    // screen says how to fix it: that's on Poster C.
+    const lights = el("div", "cl-lights");
+    els.lightA = el("div", "cl-light", "MAIN A BUS UNDERVOLT");
+    els.lightB = el("div", "cl-light", "MAIN B BUS UNDERVOLT");
+    lights.append(els.lightA, els.lightB);
+    els.banner = el("div", "cl-banner armed");
     const grid = el("div", "cl-grid");
-    // The banner stays pinned to the top, so it's visible while scrolled down.
+    // The lights and banner stay pinned to the top, so they're visible while scrolled down.
     const top = el("div", "cl-top");
-    top.append(els.banner);
+    top.append(lights, els.banner);
     container.append(top, grid);
 
     CONTROLS.forEach((c) => {
@@ -211,7 +216,6 @@ window.Checklist = (function () {
       const head = el("div", "cl-head");
       head.append(el("span", "cl-label", c.label));
       const tags = el("span", "cl-tags");
-      if (c.bus) tags.append(el("span", "cl-bus", "⚡ B BUS"));
       c.lockEl = el("span", "cl-lock", "🔒");
       tags.append(c.lockEl);
       head.append(tags);
@@ -278,13 +282,10 @@ window.Checklist = (function () {
         c.gaugeFill.classList.toggle("in-range", p < VALVE_TARGET && p > DEPLETED);
       }
     });
+    els.lightB.classList.toggle("on", S.undervolt);
     const armed = S.plates === "Clean" && !S.battery;
-    els.banner.hidden = !(S.undervolt || armed);
-    els.banner.classList.toggle("armed", armed && !S.undervolt);
-    els.breaker.hidden = !S.undervolt;
-    els.bannerText.textContent = S.undervolt
-      ? "⚠ MAIN B BUS UNDERVOLT"
-      : "⚠ WARP FUSE ARMED: connect the 6V battery in " + secsLeft(S.platesAt + PLATE_SECONDS * 1000) + "s";
+    els.banner.hidden = !armed;
+    els.banner.textContent = "⚠ WARP FUSE ARMED: connect the 6V battery in " + secsLeft(S.platesAt + PLATE_SECONDS * 1000) + "s";
   }
 
   // Timed rules: the plate fuse, the fuel cell running dry, and the countdown readouts.

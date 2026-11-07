@@ -162,14 +162,21 @@
   /* Technobabble Checklist */
   .back-btn { margin-bottom: 14px; }
   .cl-top { position: sticky; top: 0; z-index: 3; padding-top: 8px; background: #080a1c; margin: 0 -4px; padding-left: 4px; padding-right: 4px; }
+  .cl-lights { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .cl-light {
+    padding: 10px 12px; border-radius: 10px; text-align: center; font-family: "Orbitron", sans-serif; font-size: .85rem;
+    background: #1a0a12; border: 2px solid #3a1a26; color: #5a3040; overflow-wrap: anywhere;
+  }
+  .cl-light.on { color: #fff; animation: alarm 1s steps(2) infinite; }
+  @keyframes alarm {
+    0%, 49% { background: #b0172c; border-color: var(--red); box-shadow: 0 0 18px rgba(255,77,94,.7); }
+    50%, 100% { background: #1a0a12; border-color: #3a1a26; color: #5a3040; }
+  }
   .cl-banner[hidden] { display: none; }
   .cl-banner {
-    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
-    padding: 12px 16px; margin-bottom: 12px; border-radius: 12px; background: #5a0f1c; border: 2px solid var(--red);
-    font-family: "Orbitron", sans-serif; font-size: 1rem; animation: alarm 1s steps(2) infinite;
+    padding: 12px 16px; margin-bottom: 12px; border-radius: 12px; background: #4a3a05; border: 2px solid #ffd166;
+    font-family: "Orbitron", sans-serif; font-size: 1rem;
   }
-  .cl-banner.armed { background: #4a3a05; border-color: #ffd166; animation: none; }
-  @keyframes alarm { 50% { background: #2a0810; } }
   .cl-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   @media (max-width: 600px) { .cl-grid { grid-template-columns: minmax(0, 1fr); } }
   .cl-card { background: #151a3a; border: 1px solid rgba(94,231,255,.3); border-radius: 14px; padding: 12px 14px; min-width: 0; }
@@ -181,7 +188,6 @@
   .cl-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
   .cl-label { font-weight: 700; font-size: 1rem; overflow-wrap: anywhere; }
   .cl-tags { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
-  .cl-bus { font-size: .7rem; color: #ffd166; border: 1px solid #ffd166; border-radius: 6px; padding: 1px 5px; }
   .cl-lock[hidden] { display: none; }
   .cl-val { font-family: "Orbitron", sans-serif; color: var(--cyan); font-size: 1.15rem; margin: 6px 0 10px; overflow-wrap: anywhere; }
   .cl-val.good { color: var(--green); }
@@ -192,7 +198,6 @@
   }
   .cl-seg.on { background: var(--cyan); color: #04121a; border-color: var(--cyan); }
   .cl-btn:active, .cl-seg:active { transform: translateY(2px); }
-  .cl-breaker { background: var(--red); border-color: #fff; font-family: "Exo 2", sans-serif; }
   .cl-fire { width: 100%; min-height: 60px; font-family: "Orbitron", sans-serif; font-size: 1.15rem; background: var(--violet); border-color: #fff; }
   .cl-input { flex: 1 1 90px; min-width: 0; min-height: 44px; font: inherit; font-size: 1.1rem; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--cyan); background: #0a0d24; color: var(--text); }
   .cl-gauge { position: relative; height: 14px; border-radius: 999px; background: #0a0d24; border: 1px solid #3a4170; margin-bottom: 10px; overflow: hidden; }
