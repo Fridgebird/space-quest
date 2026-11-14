@@ -27,10 +27,9 @@ window.ADMIN_KEY = "rudolph";
 window.SHIP = {
   name: "[Ship name]",
   details: [
-    ["Type", "[Ship type]"],
+    ["Type", "Solar class bulk carrier"],
     ["Registry", "[Registry number]"],
     ["Home port", "Earth"],
-    ["Destination", "[Destination]"],
     ["Cargo", "[Cargo]"],
     ["Current position", "UNKNOWN"]
   ]
