@@ -5,7 +5,8 @@
 //   names: { ship, cargo, science: true, crew: { "<crewId>": { name, photo } } } }
 
 window.GameState = (function () {
-  const FB_VERSION = "10.12.2";
+  // Firebase 8 is built for older browsers too (the tablet's Chrome can't read Firebase 10).
+  const FB_VERSION = "8.10.1";
   const isDemo = !window.FIREBASE_CONFIG;
   const demoKey = "quest-game:" + window.GAME_ID;
   let ref = null;
@@ -27,8 +28,8 @@ window.GameState = (function () {
       ready = Promise.resolve();
     } else {
       const base = "https://www.gstatic.com/firebasejs/" + FB_VERSION;
-      ready = loadScript(base + "/firebase-app-compat.js")
-        .then(() => loadScript(base + "/firebase-database-compat.js"))
+      ready = loadScript(base + "/firebase-app.js")
+        .then(() => loadScript(base + "/firebase-database.js"))
         .then(() => {
           firebase.initializeApp(window.FIREBASE_CONFIG);
           ref = firebase.database().ref("games/" + window.GAME_ID);
