@@ -56,7 +56,25 @@
     </section>
     <section id="view-alerts" hidden>
       <h2>Alerts</h2>
-      <div class="grid" id="grid"></div>
+      <div class="board metal">
+        <div class="lights" id="lights"></div>
+        <div class="crt diag-screen" id="diagScreen" aria-live="polite"></div>
+        <div class="diag-controls" id="diagControls">
+          <button class="btn" id="openControls" hidden>Open warp core controls</button>
+          <form id="codeForm" autocomplete="off" hidden>
+            <input id="codeInput" aria-label="Enter code" placeholder="Enter code" autocapitalize="characters" autocorrect="off" spellcheck="false">
+            <button class="btn" type="submit">Submit</button>
+          </form>
+          <div id="wirePanel" class="well" hidden>
+            <svg id="wireSvg" role="group" aria-label="Wiring panel"></svg>
+            <div class="wire-actions" id="wireActions">
+              <button class="key" id="wireReset">Disconnect all</button>
+              <button class="btn" id="wirePower">Power on</button>
+            </div>
+          </div>
+          <div id="codeError" role="alert"></div>
+        </div>
+      </div>
       <div class="warp-wrap"><button id="warpBtn" disabled></button></div>
     </section>
     <section id="view-checklist" hidden>
@@ -65,28 +83,6 @@
       <div id="checklistRoot"></div>
     </section>
   </main>
-</div>
-
-<div class="modal" id="modal" hidden>
-  <div class="box metal" id="mBox">
-    <div class="sym" id="mSym"></div>
-    <h2 id="mTitle"></h2>
-    <div class="state" id="mState"></div>
-    <div class="content crt" id="mContent"></div>
-    <form id="codeForm" autocomplete="off" hidden>
-      <input id="codeInput" aria-label="Enter code" placeholder="Enter code" autocapitalize="characters" autocorrect="off" spellcheck="false">
-      <button class="btn" type="submit">Submit</button>
-    </form>
-    <div id="wirePanel" class="well" hidden>
-      <svg id="wireSvg" role="group" aria-label="Wiring panel"></svg>
-      <div class="wire-actions" id="wireActions">
-        <button class="key" id="wireReset">Disconnect all</button>
-        <button class="btn" id="wirePower">Power on</button>
-      </div>
-    </div>
-    <div id="codeError" role="alert"></div>
-    <button class="key" id="mClose">Close</button>
-  </div>
 </div>
 
 <div id="ending" hidden>

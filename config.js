@@ -82,66 +82,85 @@ window.ENDING = {
   text: "You made it back to Earth in time for Christmas!"
 };
 
-// 8) The alerts. Each one needs:
-//    id           A unique short name. Don't change it during a game.
-//    symbol       The emoji on the tile.
-//    title        The alert's name.
-//    description  What the crew see when they tap the active alert.
-//    clearedText  What they see when they tap it after it's cleared.
-//    code         OPTIONAL. If set, the crew clear this alert themselves by entering
-//                 this code (capitals and spaces don't matter).
-//    wiring       OPTIONAL. If set, the crew clear this alert by wiring terminals together
-//                 on screen. `left` and `right` are the terminal labels, and `solution`
-//                 says which right terminal each left terminal connects to.
-//    checklist    OPTIONAL. If true, tapping the alert opens the warp core start-up
-//                 control panel (see checklist-design.md), and the crew clear it there.
+// 8) The alerts. Each one is a red warning light on the Alerts screen (green once
+//    cleared), with a rubber button beside it that shows `instructions` on the monitor.
+//    id            A unique short name. Don't change it during a game.
+//    title         The words on the warning light.
+//    clearedTitle  OPTIONAL. The words on the light once it's cleared and green.
+//    instructions  What the monitor shows while the alert is active. Each string is a paragraph.
+//    clearedText   What the monitor shows once it's cleared.
+//    code          OPTIONAL. If set, the crew clear this alert themselves by entering
+//                  this code under the monitor (capitals and spaces don't matter).
+//    wiring        OPTIONAL. If set, the crew clear this alert by wiring terminals together
+//                  under the monitor. `left` and `right` are the terminal labels, and
+//                  `solution` says which right terminal each left terminal connects to.
+//    checklist     OPTIONAL. If true, the monitor has a button to the warp core start-up
+//                  controls (see checklist-design.md), and the crew clear it there.
 //    If none of these is set, only you can clear the alert, from Mission Control.
 window.ALERTS = [
   {
-    id: "checklist", symbol: "🎛️", title: "Warp Core Start-up",
-    description: "The warp core is offline. Complete the Electrical, Dilithium and Plasma checklists to bring it online.",
+    id: "warp-core", title: "Warp core offline", clearedTitle: "Warp core online",
+    instructions: [
+      "Placeholder: the warp core is offline. Complete the Electrical, Dilithium and Plasma checklists to bring it online.",
+      "Open the warp core controls below."
+    ],
     clearedText: "Supersonic combustion engine running. Warp core online.",
     checklist: true
   },
   {
-    id: "infestation", symbol: "🐛", title: "Infestation",
-    description: "Placeholder: details of the infestation task.",
-    clearedText: "Infestation contained."
+    id: "control-rods", title: "Warp drive control rods depleted", clearedTitle: "Warp drive control rods",
+    instructions: ["Placeholder: instructions for transporting the control rods."],
+    clearedText: "Control rods installed. Warp drive fuelled."
   },
   {
-    id: "navigation", symbol: "🧭", title: "Navigation",
-    description: "Navigation system offline. Enter a valid navigation code to restore it.",
-    clearedText: "Navigation restored. Course plotted for Earth.",
-    code: "2626"
-  },
-  {
-    id: "life-support", symbol: "💨", title: "Life Support",
-    description: "Placeholder: details of the life support task.",
-    clearedText: "Life support stable."
-  },
-  {
-    id: "reactor", symbol: "☢️", title: "Reactor",
-    description: "Placeholder: details of the reactor task.",
-    clearedText: "Reactor stable."
-  },
-  {
-    id: "comms", symbol: "📡", title: "Communications",
-    description: "Placeholder: details of the communications task.",
-    clearedText: "Communications restored."
-  },
-  {
-    id: "hull", symbol: "🛡️", title: "Hull Breach",
-    description: "Placeholder: details of the hull breach task.",
-    clearedText: "Hull sealed."
-  },
-  {
-    id: "wiring", symbol: "⚡", title: "Warp Core Wiring",
-    description: "Warp core power coupling disconnected. Restore the wiring using the ship's wiring schematic. Tap a terminal on the left, then a terminal on the right, to connect them.",
-    clearedText: "Power restored to the warp core.",
+    id: "power-coupling", title: "Main power coupling",
+    instructions: [
+      "Placeholder: the main power coupling is disconnected. Restore the wiring using the ship's wiring diagram.",
+      "Tap a terminal on the left, then a terminal on the right, to connect them."
+    ],
+    clearedText: "Main power coupling restored.",
     wiring: {
       left: ["A", "B", "C", "D", "E", "F"],
       right: ["1", "2", "3", "4", "5", "6"],
       solution: { A: "4", B: "1", C: "6", D: "2", E: "5", F: "3" }
     }
+  },
+  {
+    id: "navicom", title: "Navicom destination not set", clearedTitle: "Navicom destination set",
+    instructions: ["Placeholder: plot a course using the astronavigation charts, then enter the course code below."],
+    clearedText: "Destination set: Earth. Course plotted.",
+    code: "2626"
+  },
+  {
+    id: "bio-sensors", title: "Ship-wide bio sensors offline", clearedTitle: "Ship-wide bio sensors",
+    instructions: ["Placeholder: instructions for restoring the bio sensors."],
+    clearedText: "Bio sensors online."
+  },
+  {
+    id: "logging", title: "Log & Monitoring error", clearedTitle: "Log & Monitoring",
+    instructions: ["Placeholder: instructions for the log & monitoring system."],
+    clearedText: "Log & monitoring restored."
   }
+];
+// The title of the warp core start-up controls screen.
+window.CONTROLS_TITLE = "Warp Core Start-up";
+
+// 9) The status board on the Alerts screen. Lights are shown in this order: an
+//    `{ alert: "<id>" }` entry is that alert's light; every other entry is a ship system
+//    that's always green (nominal), just for show, with `text` paragraphs for the monitor.
+window.SYSTEMS = [
+  { alert: "warp-core" },
+  { id: "life-support", title: "Life support", text: ["Oxygen 20.9%. CO2 0.04%. Cabin pressure 101 kPa.", "Placeholder: all within limits."] },
+  { id: "hull", title: "Hull integrity", text: ["Hull integrity 98.2%.", "Placeholder: minor dents on the cargo bay doors. Still there from last time."] },
+  { alert: "control-rods" },
+  { id: "gravity", title: "Artificial gravity", text: ["Gravity 1.00 g.", "Placeholder: nominal."] },
+  { alert: "power-coupling" },
+  { id: "dampers", title: "Inertial dampers", text: ["Placeholder: inertial dampers nominal."] },
+  { id: "stasis", title: "Stasis bay", text: ["Placeholder: stasis pods powered down. Revival complete."] },
+  { alert: "navicom" },
+  { id: "reclamation", title: "Waste reclamation", text: ["Placeholder: waste reclamation nominal. Do not ask what's in the soup."] },
+  { alert: "bio-sensors" },
+  { id: "galley", title: "Galley food dispenser", text: ["Placeholder: food dispenser nominal. Menu: curry, curry or curry."] },
+  { alert: "logging" },
+  { id: "hot-water", title: "Hot water", text: ["Placeholder: hot water available. Showers limited to 3 minutes."] }
 ];

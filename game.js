@@ -181,7 +181,7 @@ function showConsole(firstTime) {
   showView("messages");
 }
 function showLogon() {
-  closeAlert();
+  clearDiag();
   if (stopTyping) stopTyping();
   $("console").hidden = true;
   $("logon").hidden = false;
@@ -194,50 +194,96 @@ $("logonBtn").addEventListener("click", () => {
   showConsole(true);
 });
 
-// Alert tiles
-const tileEls = {};
-ALERTS.forEach((a) => {
-  const b = document.createElement("button");
-  b.className = "tile";
-  b.innerHTML = '<div class="sym"></div><div class="name"></div><div class="tag"></div>';
-  b.querySelector(".sym").textContent = a.symbol;
-  b.querySelector(".name").textContent = a.title;
-  b.addEventListener("click", () => {
-    if (a.checklist && !cleared[a.id]) return showView("checklist");
-    openAlert = a; renderAlert(true);
-  });
-  $("grid").appendChild(b);
-  tileEls[a.id] = b;
+// Alerts: a board of lit status panels. Each alert is red until it's cleared; the other
+// ship systems are always green, just for show. The rubber button beside a light shows
+// its details on the monitor underneath.
+const isAlert = (item) => ALERTS.indexOf(item) >= 0;
+const titleOf = (item) => (isAlert(item) && cleared[item.id] && item.clearedTitle) || item.title;
+const boardItems = SYSTEMS.map((s) => (s.alert ? ALERTS.find((a) => a.id === s.alert) : s)).filter(Boolean);
+ALERTS.forEach((a) => { if (boardItems.indexOf(a) < 0) boardItems.push(a); });
+const lightEls = new Map();
+let selected = null; // the light whose details are on the monitor
+boardItems.forEach((item) => {
+  const row = make("div", "light-row");
+  const light = make("div", "ann", item.title);
+  const btn = make("button", "w-rubber-btn");
+  btn.type = "button";
+  btn.setAttribute("aria-label", item.title + ": show details");
+  btn.addEventListener("click", () => { Sfx.click(); selectItem(item); });
+  row.append(light, btn);
+  $("lights").appendChild(row);
+  lightEls.set(item, { row, light });
 });
+
+function selectItem(item) {
+  selected = item;
+  openAlert = item && isAlert(item) ? item : null;
+  lightEls.forEach((els, it) => els.row.classList.toggle("sel", it === item));
+  $("codeError").textContent = "";
+  $("codeInput").value = "";
+  wireSelected = null;
+  renderDiag(true);
+  // Bring the monitor into view if it's below the bottom of the screen.
+  const box = $("diagScreen").getBoundingClientRect();
+  if (item && box.bottom > innerHeight) window.scrollBy({ top: Math.min(box.bottom - innerHeight + 16, box.top - 8), behavior: reducedMotion ? "auto" : "smooth" });
+}
+const clearDiag = () => selectItem(null);
+
+// The monitor: a DOS-style readout that types itself out when it changes.
+const paras = (x) => (Array.isArray(x) ? x : x ? [x] : []);
+let diagShown = null, diagTimer = null;
+function renderDiag(fresh) {
+  const item = selected, a = openAlert;
+  const isCleared = a ? !!cleared[a.id] : true;
+  let lines;
+  if (!item) {
+    const active = ALERTS.filter((x) => !cleared[x.id]).length;
+    lines = [["dos-cmd", "C:\\JMC> STATUS"],
+      ["", active ? active + (active === 1 ? " ALERT" : " ALERTS") + " ACTIVE. WARP DRIVE OFFLINE." : "ALL SYSTEMS NOMINAL. WARP DRIVE READY."],
+      ["", "Press the button beside a light for details."]];
+  } else {
+    lines = [["dos-cmd", "C:\\JMC> DIAG " + titleOf(item).toUpperCase()],
+      ["diag-status" + (a && !isCleared ? " bad" : ""), "STATUS: " + (a && !isCleared ? "*** ALERT ***" : "NOMINAL")]]
+      .concat((a ? (isCleared ? paras(a.clearedText) : paras(a.instructions || a.description)) : paras(item.text)).map((t) => ["", t]));
+  }
+  const key = JSON.stringify(lines);
+  if (fresh || key !== diagShown) showLines(lines, diagShown !== null && !reducedMotion);
+  diagShown = key;
+  $("openControls").hidden = !(a && a.checklist && !isCleared);
+  $("codeForm").hidden = !(a && a.code && !isCleared);
+  renderWiring(a, isCleared);
+}
+function showLines(lines, type) {
+  clearInterval(diagTimer);
+  const screen = $("diagScreen");
+  screen.innerHTML = "";
+  const nodes = lines.map(([cls, text]) => screen.appendChild(make("p", cls || null, type ? "" : text)));
+  const prompt = screen.appendChild(make("p", "dos-cmd caret", "C:\\JMC>"));
+  if (!type) return;
+  prompt.hidden = true;
+  let li = 0, ci = 0;
+  diagTimer = setInterval(() => {
+    for (let k = 0; k < 3; k++) {
+      if (li >= lines.length) { clearInterval(diagTimer); prompt.hidden = false; return; }
+      ci++;
+      nodes[li].textContent = lines[li][1].slice(0, ci);
+      if (ci >= lines[li][1].length) { li++; ci = 0; }
+    }
+  }, 16);
+}
 
 // The warp core start-up checklist has its own screen of controls.
 const checklistAlert = ALERTS.find((a) => a.checklist);
 if (checklistAlert) {
-  $("checklistTitle").textContent = checklistAlert.title;
+  $("checklistTitle").textContent = window.CONTROLS_TITLE || checklistAlert.title;
   Checklist.mount($("checklistRoot"), () => {
     GameState.setCleared(checklistAlert.id, true).catch(() => {
       $("status").textContent = "⚠ Could not reach the database";
     });
   });
 }
+$("openControls").addEventListener("click", () => { Sfx.click(); showView("checklist"); });
 $("checklistBack").addEventListener("click", () => showView("alerts"));
-
-function renderAlert(fresh) {
-  const a = openAlert;
-  if (!a) return;
-  const isCleared = !!cleared[a.id];
-  $("modal").hidden = false;
-  $("mBox").classList.toggle("cleared", isCleared);
-  $("mSym").textContent = a.symbol;
-  $("mTitle").textContent = a.title;
-  $("mState").textContent = isCleared ? "CLEARED" : "ALERT ACTIVE";
-  $("mContent").innerHTML = isCleared ? a.clearedText : a.description;
-  $("codeForm").hidden = isCleared || !a.code;
-  $("mBox").classList.toggle("wide", !!a.wiring);
-  if (fresh || isCleared) { $("codeError").textContent = ""; $("codeInput").value = ""; wireSelected = null; }
-  renderWiring(a, isCleared);
-  if (fresh && a.code && !isCleared) $("codeInput").focus();
-}
 
 // Wiring puzzles: tap a left terminal, then a right terminal, to connect them.
 const wiring = {}; // alertId -> { leftLabel: rightLabel }
@@ -246,8 +292,9 @@ const WIRE_COLOURS = ["#ff5d73", "#ffd166", "#4be3a0", "#5ee7ff", "#b89cff", "#f
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 function renderWiring(a, isCleared) {
-  $("wirePanel").hidden = !a.wiring;
-  if (!a.wiring) return;
+  $("wirePanel").hidden = !(a && a.wiring);
+  if (!a || !a.wiring) return;
+  $("wirePanel").classList.toggle("done", isCleared);
   const w = a.wiring;
   const links = isCleared ? w.solution : (wiring[a.id] = wiring[a.id] || {});
   const n = Math.max(w.left.length, w.right.length);
@@ -316,12 +363,6 @@ $("wirePower").addEventListener("click", () => {
     p.classList.remove("shake"); void p.offsetWidth; p.classList.add("shake");
   }
 });
-function closeAlert() {
-  openAlert = null;
-  $("modal").hidden = true;
-}
-$("mClose").addEventListener("click", closeAlert);
-$("modal").addEventListener("click", (e) => { if (e.target.id === "modal") closeAlert(); });
 
 const normaliseCode = (s) => String(s).replace(/\s+/g, "").toUpperCase();
 $("codeForm").addEventListener("submit", (e) => {
@@ -342,14 +383,14 @@ $("codeForm").addEventListener("submit", (e) => {
 
 function render(newlyCleared) {
   let active = 0;
-  ALERTS.forEach((a) => {
-    const el = tileEls[a.id];
-    const isCleared = !!cleared[a.id];
-    if (!isCleared) active++;
-    el.classList.toggle("cleared", isCleared);
-    el.querySelector(".tag").textContent = isCleared ? "CLEARED" : "ACTIVE";
-    if (newlyCleared.includes(a.id)) {
-      el.classList.remove("just"); void el.offsetWidth; el.classList.add("just");
+  lightEls.forEach((els, item) => {
+    const bad = isAlert(item) && !cleared[item.id];
+    if (bad) active++;
+    els.light.classList.toggle("bad", bad);
+    els.light.classList.toggle("ok", !bad);
+    if (els.light.textContent !== titleOf(item)) els.light.textContent = titleOf(item);
+    if (isAlert(item) && newlyCleared.includes(item.id)) {
+      els.light.classList.remove("just"); void els.light.offsetWidth; els.light.classList.add("just");
     }
   });
   $("badge").textContent = active;
@@ -371,7 +412,7 @@ const WARP_END = 3.6, ARRIVAL = 5.5;
 let warpFrame = null;
 
 function playEnding(skipToEnd) {
-  closeAlert();
+  clearDiag();
   if (warpFrame) cancelAnimationFrame(warpFrame);
   $("ending").hidden = false;
   const canvas = $("warpCanvas");
@@ -471,7 +512,7 @@ GameState.subscribe((state) => {
   cleared = state.cleared;
   renderNames(state.names);
   render(firstLoad ? [] : fresh);
-  if (openAlert) renderAlert(false);
+  renderDiag(false);
   if (!firstLoad && fresh.length) Sfx.chime();
 
   // Mission Control pressed Reset: go back to the log-on screen.

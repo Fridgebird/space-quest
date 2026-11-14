@@ -19,10 +19,8 @@ if (key !== ADMIN_KEY) {
     const row = document.createElement("div");
     row.className = "row";
     row.innerHTML =
-      '<div class="sym"></div>' +
       '<div class="info"><div class="t"></div><div class="r"></div></div>' +
       '<button class="toggle"></button>';
-    row.querySelector(".sym").textContent = a.symbol;
     row.querySelector(".t").textContent = a.title;
     row.querySelector(".r").textContent =
       a.code ? "Crew enter code: " + a.code
