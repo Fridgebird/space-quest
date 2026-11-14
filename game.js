@@ -10,22 +10,14 @@ const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matc
 let cleared = {};
 let warped = false;
 let firstLoad = true;
-let audio = null;
 let openAlert = null;
 let stopTyping = null;
 
-// Stars
-for (let i = 0; i < 90; i++) {
-  const s = document.createElement("div");
-  const size = 1 + Math.random() * 2.5;
-  s.className = "star";
-  s.style.left = Math.random() * 100 + "vw";
-  s.style.top = Math.random() * 100 + "vh";
-  s.style.width = s.style.height = size + "px";
-  s.style.animationDuration = 1.5 + Math.random() * 4 + "s";
-  s.style.animationDelay = -Math.random() * 5 + "s";
-  $("stars").appendChild(s);
-}
+// Status lights in the header: they change slowly and never strobe.
+const leds = Array.from({ length: 16 }, () => $("blinks").appendChild(document.createElement("i")));
+const shuffleLed = (l) => { const r = Math.random(); l.className = r < .35 ? "a" : r < .55 ? "g" : ""; };
+leds.forEach(shuffleLed);
+if (!reducedMotion) setInterval(() => shuffleLed(leds[Math.floor(Math.random() * leds.length)]), 1400);
 
 // Static screens
 $("logonShip").textContent = SHIP.name;
@@ -74,7 +66,7 @@ function renderMessages(typeFirst) {
       const actions = document.createElement("div");
       actions.className = "msg-actions";
       const toAlerts = document.createElement("button");
-      toAlerts.className = "link-btn";
+      toAlerts.className = "key";
       toAlerts.textContent = "View alerts";
       toAlerts.addEventListener("click", () => showView("alerts"));
       actions.appendChild(toAlerts);
@@ -88,7 +80,7 @@ function renderMessages(typeFirst) {
 function typeOut(texts, paras, actions) {
   paras.forEach((p) => { p.textContent = ""; });
   const skip = document.createElement("button");
-  skip.className = "link-btn";
+  skip.className = "key";
   skip.textContent = "Skip";
   actions.prepend(skip);
   let pi = 0, ci = 0;
@@ -114,11 +106,12 @@ function typeOut(texts, paras, actions) {
 
 // Navigation
 const navButtons = document.querySelectorAll("nav button");
-navButtons.forEach((b) => b.addEventListener("click", () => showView(b.dataset.view)));
+navButtons.forEach((b) => b.addEventListener("click", () => { Sfx.click(); showView(b.dataset.view); }));
 function showView(view) {
   const navView = view === "checklist" ? "alerts" : view;
   navButtons.forEach((b) => b.classList.toggle("active", b.dataset.view === navView));
   ["messages", "crew", "ship", "alerts", "checklist"].forEach((v) => { $("view-" + v).hidden = v !== view; });
+  document.body.classList.toggle("wide-view", view === "checklist");
   window.scrollTo(0, 0);
 }
 
@@ -137,7 +130,8 @@ function showLogon() {
 if (store.get(LOGGED_ON_KEY)) showConsole(false);
 $("logonBtn").addEventListener("click", () => {
   store.set(LOGGED_ON_KEY, "1");
-  initAudio();
+  Sfx.init();
+  Sfx.clunk();
   showConsole(true);
 });
 
@@ -258,7 +252,7 @@ $("wirePower").addEventListener("click", () => {
     });
   } else {
     $("codeError").textContent = "CIRCUIT FAULT: POWER FAILED";
-    buzz();
+    Sfx.buzz();
     const p = $("wirePanel");
     p.classList.remove("shake"); void p.offsetWidth; p.classList.add("shake");
   }
@@ -281,48 +275,11 @@ $("codeForm").addEventListener("submit", (e) => {
     });
   } else {
     $("codeError").textContent = "INVALID CODE";
+    Sfx.buzz();
     const form = $("codeForm");
     form.classList.remove("shake"); void form.offsetWidth; form.classList.add("shake");
   }
 });
-
-// Audio needs a tap before it can play, so set it up on the first touch anywhere.
-document.addEventListener("pointerdown", initAudio, { once: true });
-function initAudio() {
-  if (audio) return;
-  try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
-}
-function chime() {
-  if (!audio) return;
-  [523, 784, 1047, 1568].forEach((f, i) => {
-    const o = audio.createOscillator(), g = audio.createGain();
-    const t0 = audio.currentTime + i * 0.1;
-    o.type = "triangle"; o.frequency.value = f;
-    g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(0.2, t0 + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
-    o.connect(g).connect(audio.destination); o.start(t0); o.stop(t0 + 0.55);
-  });
-}
-function buzz() {
-  if (!audio) return;
-  const o = audio.createOscillator(), g = audio.createGain(), t0 = audio.currentTime;
-  o.type = "square"; o.frequency.value = 90;
-  g.gain.setValueAtTime(0.12, t0);
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
-  o.connect(g).connect(audio.destination); o.start(t0); o.stop(t0 + 0.5);
-}
-function warpSound() {
-  if (!audio) return;
-  const o = audio.createOscillator(), g = audio.createGain(), t0 = audio.currentTime;
-  o.type = "sawtooth";
-  o.frequency.setValueAtTime(50, t0);
-  o.frequency.exponentialRampToValueAtTime(1200, t0 + 3.2);
-  g.gain.setValueAtTime(0.0001, t0);
-  g.gain.exponentialRampToValueAtTime(0.12, t0 + 2.8);
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 3.6);
-  o.connect(g).connect(audio.destination); o.start(t0); o.stop(t0 + 3.7);
-}
 
 function render(newlyCleared) {
   let active = 0;
@@ -371,7 +328,7 @@ function playEnding(skipToEnd) {
   let last = performance.now();
   $("engaging").classList.toggle("show", !skip);
   $("endFinal").classList.toggle("show", skip);
-  if (!skip) warpSound();
+  if (!skip) Sfx.warp();
 
   function frame(now) {
     const t = (now - start) / 1000;
@@ -455,7 +412,7 @@ GameState.subscribe((state) => {
   cleared = state.cleared;
   render(firstLoad ? [] : fresh);
   if (openAlert) renderAlert(false);
-  if (!firstLoad && fresh.length) chime();
+  if (!firstLoad && fresh.length) Sfx.chime();
 
   // Mission Control pressed Reset: go back to the log-on screen.
   const resetAt = state.resetAt ? String(state.resetAt) : "";

@@ -4,230 +4,44 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ship's Computer</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Exo+2:wght@400;700&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg1: #05060f; --bg2: #1a1145; --cyan: #5ee7ff; --violet: #9b5cff; --red: #ff4d5e; --green: #4be3a0;
-    --panel: #151a3a; --panel-2: #1d2350; --text: #eef4ff; --muted: #a3acd0;
-  }
-  * { box-sizing: border-box; }
-  [hidden] { display: none !important; }
-  html, body { margin: 0; min-height: 100%; }
-  body {
-    font-family: "Exo 2", system-ui, sans-serif; color: var(--text);
-    background:
-      radial-gradient(ellipse at 15% 10%, rgba(155,92,255,.35), transparent 50%),
-      radial-gradient(ellipse at 90% 80%, rgba(94,231,255,.18), transparent 50%),
-      linear-gradient(var(--bg2), var(--bg1) 70%);
-    background-attachment: fixed;
-    min-height: 100vh; overflow-x: hidden;
-  }
-  .stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
-  .star { position: absolute; border-radius: 50%; background: #fff; animation: twinkle ease-in-out infinite alternate; }
-  @keyframes twinkle { from { opacity: .15; } to { opacity: 1; } }
-
-  h1, h2, .display { font-family: "Orbitron", sans-serif; }
-  .btn {
-    font: inherit; font-weight: 700; font-size: 1.2rem; padding: 14px 36px; border: 0; border-radius: 999px;
-    cursor: pointer; background: var(--violet); color: #fff; box-shadow: 0 5px 0 #5a2ca8;
-  }
-  .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #5a2ca8; }
-
-  /* Log-on */
-  #logon { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; padding: 24px 16px; text-align: center; }
-  #logon h1 { color: var(--cyan); font-size: clamp(1.6rem, 6vw, 3rem); margin: 0; text-shadow: 0 0 22px rgba(94,231,255,.6); }
-  #logon p { color: var(--muted); font-size: 1.2rem; margin: 0; }
-
-  /* Console layout: sidebar on tablets, tabs along the top on phones */
-  #console { position: relative; z-index: 1; display: grid; grid-template-columns: 230px minmax(0, 1fr); grid-template-rows: auto 1fr; min-height: 100vh; }
-  header { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; border-bottom: 1px solid rgba(94,231,255,.3); background: rgba(5,6,15,.55); }
-  header .ship { font-family: "Orbitron", sans-serif; color: var(--cyan); font-size: 1.15rem; }
-  header .sub { color: var(--muted); font-size: .85rem; white-space: nowrap; }
-  nav { display: flex; flex-direction: column; gap: 8px; padding: 16px 12px; border-right: 1px solid rgba(94,231,255,.2); background: rgba(5,6,15,.35); }
-  nav button {
-    display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 56px; width: 100%;
-    font: inherit; font-weight: 700; font-size: 1.05rem; text-align: left; color: var(--text);
-    padding: 10px 14px; border-radius: 12px; border: 1px solid transparent; background: none; cursor: pointer;
-  }
-  nav button.active { background: var(--panel-2); border-color: var(--cyan); color: var(--cyan); }
-  .badge {
-    display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 28px; padding: 0 8px;
-    border-radius: 999px; background: var(--red); color: #fff; font-size: .95rem; box-shadow: 0 0 12px rgba(255,77,94,.8);
-    animation: pulse 1.4s ease-in-out infinite;
-  }
-  @keyframes pulse { 50% { box-shadow: 0 0 2px rgba(255,77,94,.3); } }
-  main { padding: 20px; min-width: 0; max-width: 900px; width: 100%; }
-  main h2 { color: var(--cyan); font-size: 1.4rem; margin: 0 0 16px; }
-
-  @media (max-width: 700px) {
-    #console { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr; }
-    header { padding: 12px 16px; }
-    nav { flex-direction: row; gap: 4px; padding: 8px; border-right: 0; border-bottom: 1px solid rgba(94,231,255,.2); }
-    nav button { flex: 1 1 0; flex-direction: column; justify-content: center; text-align: center; font-size: .8rem; padding: 6px 4px; position: relative; min-width: 0; }
-    nav .badge { position: absolute; top: 2px; right: 2px; min-width: 22px; height: 22px; padding: 0 5px; font-size: .8rem; }
-    main { padding: 16px; }
-  }
-
-  /* Messages */
-  .card { background: rgba(21,26,58,.8); border: 1px solid rgba(94,231,255,.35); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
-  .msg-head { color: var(--muted); font-size: .9rem; margin-bottom: 4px; }
-  .msg-subject { font-weight: 700; font-size: 1.25rem; margin-bottom: 12px; }
-  .msg-body p { font-size: 1.15rem; line-height: 1.6; margin: 0 0 12px; min-height: 1.6em; }
-  .caret::after { content: "▌"; color: var(--cyan); animation: blink 1s steps(2) infinite; }
-  @keyframes blink { 50% { opacity: 0; } }
-  .msg-actions { display: flex; flex-wrap: wrap; gap: 12px; }
-  .link-btn { font: inherit; font-weight: 700; color: var(--cyan); background: none; border: 1px solid var(--cyan); border-radius: 999px; padding: 10px 22px; cursor: pointer; }
-
-  /* Crew + ship */
-  .rows { width: 100%; border-collapse: collapse; }
-  .rows th, .rows td { text-align: left; padding: 14px 12px; border-bottom: 1px solid rgba(94,231,255,.15); font-size: 1.1rem; overflow-wrap: anywhere; }
-  .rows tr:last-child th, .rows tr:last-child td { border-bottom: 0; }
-  .rows th { color: var(--muted); font-weight: 400; width: 40%; }
-
-  /* Alerts */
-  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-  @media (max-width: 480px) { .grid { gap: 10px; } }
-  .tile {
-    position: relative; min-height: 130px; aspect-ratio: 1; border-radius: 16px; border: 2px solid var(--red);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    font: inherit; color: inherit; padding: 8px; cursor: pointer; background: #2d1230;
-    box-shadow: 0 0 16px rgba(255,77,94,.45);
-  }
-  .tile .sym { font-size: clamp(2.2rem, 8vw, 4rem); line-height: 1; }
-  .tile .name { margin-top: 8px; font-weight: 700; font-size: clamp(.8rem, 2.4vw, 1.05rem); text-align: center; overflow-wrap: anywhere; }
-  .tile .tag { margin-top: 4px; font-size: .72rem; color: var(--red); letter-spacing: .08em; }
-  .tile.cleared { background: var(--panel); border-color: var(--green); box-shadow: none; }
-  .tile.cleared .tag { color: var(--green); }
-  .tile.just { animation: pop 1.2s ease; }
-  @keyframes pop {
-    0% { transform: scale(1); } 30% { transform: scale(1.14) rotate(-3deg); }
-    60% { transform: scale(.97) rotate(2deg); } 100% { transform: scale(1); }
-  }
-  .warp-wrap { margin-top: 24px; text-align: center; }
-  #warpBtn {
-    width: 100%; min-height: 72px; font-family: "Orbitron", sans-serif; font-size: 1.3rem; border-radius: 16px; border: 2px solid #3a4170;
-    background: #1a1e40; color: var(--muted); cursor: not-allowed;
-  }
-  #warpBtn:not(:disabled) { cursor: pointer; color: #04121a; background: linear-gradient(90deg, var(--cyan), #b89cff); border-color: #fff; animation: ready 1.2s ease-in-out infinite; }
-  @keyframes ready { 50% { box-shadow: 0 0 34px rgba(94,231,255,.9); } }
-
-  /* Alert detail */
-  .modal { position: fixed; inset: 0; background: rgba(2,3,12,.78); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
-  .modal .box { background: var(--panel); border-radius: 20px; padding: 24px; max-width: 520px; width: 100%; max-height: calc(100vh - 32px); overflow-y: auto; text-align: center; border: 2px solid var(--red); }
-  .modal .box.cleared { border-color: var(--green); }
-  .modal .sym { font-size: 3.6rem; }
-  .modal h2 { font-size: 1.5rem; margin: 6px 0 4px; color: var(--text); }
-  .modal .state { font-weight: 700; letter-spacing: .08em; font-size: .85rem; color: var(--red); margin-bottom: 12px; }
-  .box.cleared .state { color: var(--green); }
-  .modal .content { font-size: 1.2rem; line-height: 1.5; }
-  #codeForm { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
-  #codeInput {
-    flex: 1 1 180px; min-width: 0; font-family: "Orbitron", sans-serif; font-size: 1.2rem; text-align: center; padding: 12px; border-radius: 12px;
-    border: 2px solid var(--cyan); background: #0a0d24; color: var(--text);
-  }
-  #codeForm .btn { box-shadow: none; padding: 12px 24px; }
-  #codeError { color: var(--red); font-weight: 700; min-height: 1.5em; margin-top: 10px; }
-  .shake { animation: shake .4s; }
-  @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-  #mClose { margin-top: 14px; }
-
-  /* Wiring puzzle */
-  .modal .box.wide { max-width: 640px; }
-  #wireSvg { width: 100%; height: auto; max-height: 55vh; display: block; margin: 12px auto 0; touch-action: manipulation; }
-  .term { cursor: pointer; }
-  .term .hit { fill: transparent; }
-  .term .post { fill: #0a0d24; stroke: var(--cyan); stroke-width: 3; }
-  .term.sel .post { fill: var(--cyan); animation: selpulse .8s ease-in-out infinite alternate; }
-  @keyframes selpulse { to { fill: #0a0d24; } }
-  .term text { fill: var(--text); font-family: "Orbitron", sans-serif; font-size: 20px; dominant-baseline: central; }
-  .box.cleared .term { cursor: default; }
-  .box.cleared .term .post { stroke: var(--green); }
-  .wire { fill: none; stroke: currentColor; stroke-width: 6; stroke-linecap: round; }
-  .wire.powered { filter: drop-shadow(0 0 5px currentColor); }
-  .wire-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 12px; }
-  .wire-actions .btn { box-shadow: none; padding: 12px 28px; }
-
-  /* Ending */
-  #ending { position: fixed; inset: 0; z-index: 20; background: #000; }
-  #warpCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  .end-text { position: absolute; left: 16px; right: 16px; text-align: center; opacity: 0; transition: opacity 1.2s; pointer-events: none; }
-  .end-text.show { opacity: 1; }
-  #engaging { top: 45%; font-family: "Orbitron", sans-serif; color: var(--cyan); font-size: clamp(1.1rem, 4vw, 2rem); }
-  #endFinal { bottom: 7%; }
-  #endFinal h2 { color: var(--cyan); font-size: clamp(1.4rem, 5vw, 2.6rem); margin: 0 0 8px; text-shadow: 0 0 18px rgba(94,231,255,.7); }
-  #endFinal p { font-size: clamp(1.05rem, 3vw, 1.5rem); margin: 0; text-shadow: 0 1px 6px #000; }
-
-  .status { position: fixed; bottom: 8px; right: 12px; font-size: .75rem; opacity: .65; z-index: 2; }
-
-  /* Technobabble Checklist */
-  .back-btn { margin-bottom: 14px; }
-  .cl-top { position: sticky; top: 0; z-index: 3; padding-top: 8px; background: #080a1c; margin: 0 -4px; padding-left: 4px; padding-right: 4px; }
-  .cl-lights { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
-  .cl-light {
-    padding: 10px 12px; border-radius: 10px; text-align: center; font-family: "Orbitron", sans-serif; font-size: .85rem;
-    background: #1a0a12; border: 2px solid #3a1a26; color: #5a3040; overflow-wrap: anywhere;
-  }
-  .cl-light.on { color: #fff; animation: alarm 1s steps(2) infinite; }
-  @keyframes alarm {
-    0%, 49% { background: #b0172c; border-color: var(--red); box-shadow: 0 0 18px rgba(255,77,94,.7); }
-    50%, 100% { background: #1a0a12; border-color: #3a1a26; color: #5a3040; }
-  }
-  .cl-banner[hidden] { display: none; }
-  .cl-banner {
-    padding: 12px 16px; margin-bottom: 12px; border-radius: 12px; background: #4a3a05; border: 2px solid #ffd166;
-    font-family: "Orbitron", sans-serif; font-size: 1rem;
-  }
-  .cl-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  @media (max-width: 600px) { .cl-grid { grid-template-columns: minmax(0, 1fr); } }
-  .cl-card { background: #151a3a; border: 1px solid rgba(94,231,255,.3); border-radius: 14px; padding: 12px 14px; min-width: 0; }
-  .cl-card.wide { grid-column: 1 / -1; }
-  .cl-card.dead { border-color: #5a2030; }
-  .cl-card.nope { animation: shake .4s, nope 1s; }
-  @keyframes nope { from { border-color: var(--red); box-shadow: 0 0 14px rgba(255,77,94,.6); } }
-  .cl-card.dead .cl-val { color: var(--red); }
-  .cl-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-  .cl-label { font-weight: 700; font-size: 1rem; overflow-wrap: anywhere; }
-  .cl-lamp { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: #2a1d10; border: 2px solid #4a3a20; }
-  .cl-lamp.lit { background: radial-gradient(circle at 35% 35%, #fff6cf, #ffc533 55%, #d98e00); border-color: #ffd166; box-shadow: 0 0 14px rgba(255,197,51,.8); }
-  .cl-val { font-family: "Orbitron", sans-serif; color: var(--cyan); font-size: 1.15rem; margin: 6px 0 10px; overflow-wrap: anywhere; }
-  .cl-val.good { color: var(--green); }
-  .cl-row { display: flex; flex-wrap: wrap; gap: 8px; }
-  .cl-rowlabel { font-size: .85rem; color: var(--muted); margin: -2px 0 6px; overflow-wrap: anywhere; }
-  .cl-seg, .cl-btn {
-    font: inherit; font-weight: 700; min-height: 44px; padding: 8px 14px; border-radius: 10px; cursor: pointer;
-    border: 1px solid #3a4170; background: #1a1e40; color: var(--text);
-  }
-  .cl-seg.on { background: var(--cyan); color: #04121a; border-color: var(--cyan); }
-  .cl-btn:active, .cl-seg:active { transform: translateY(2px); }
-  .cl-fire { width: 100%; min-height: 60px; font-family: "Orbitron", sans-serif; font-size: 1.15rem; background: var(--violet); border-color: #fff; }
-  .cl-input { flex: 1 1 90px; min-width: 0; min-height: 44px; font: inherit; font-size: 1.1rem; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--cyan); background: #0a0d24; color: var(--text); }
-  .cl-gauge { position: relative; height: 14px; border-radius: 999px; background: #0a0d24; border: 1px solid #3a4170; margin-bottom: 10px; overflow: hidden; }
-  .cl-gauge-fill { height: 100%; background: #ffd166; transition: width .25s linear; }
-  .cl-gauge-fill.in-range { background: var(--green); }
-  .cl-gauge-band { position: absolute; top: 0; bottom: 0; z-index: 1; border-left: 2px solid var(--red); border-right: 2px solid var(--red); }
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&family=Barlow+Condensed:wght@500;600;700&family=VT323&family=Permanent+Marker&display=swap" rel="stylesheet">
+<script>
+  // Load the stylesheet with a unique tag each time, like the scripts below, so a look
+  // change shows up after one refresh.
+  document.write('<link rel="stylesheet" href="style.css?v=' + Date.now() + '">');
+</script>
 </head>
 <body>
-<div class="stars" id="stars"></div>
-
 <section id="logon">
-  <h1 id="logonShip"></h1>
-  <p>Stasis cycle interrupted</p>
-  <button class="btn" id="logonBtn">Log on</button>
+  <div class="logon-panel metal">
+    <div class="crt">
+      <p>SHIP'S COMPUTER v26.26</p>
+      <h1 id="logonShip"></h1>
+      <p>STASIS CYCLE INTERRUPTED</p>
+      <p>CREW REVIVAL COMPLETE</p>
+      <p class="caret">AWAITING LOG ON</p>
+    </div>
+    <button class="btn" id="logonBtn">Log on</button>
+  </div>
 </section>
 
 <div id="console" hidden>
-  <header>
+  <header class="metal">
     <div class="ship" id="headerShip"></div>
-    <div class="sub">Ship's Computer</div>
+    <div class="hdr-right">
+      <span class="dymo">Ship's computer · do not remove</span>
+      <div class="blinks well" id="blinks" aria-hidden="true"></div>
+    </div>
   </header>
-  <nav>
+  <nav class="metal">
     <button data-view="messages">Messages</button>
     <button data-view="crew">Crew Manifest</button>
     <button data-view="ship">About the Ship</button>
     <button data-view="alerts">Alerts <span class="badge" id="badge" aria-label="active alerts" hidden></span></button>
   </nav>
-  <main>
+  <main class="metal">
     <section id="view-messages" hidden>
       <h2>Messages</h2>
       <div id="messageList"></div>
@@ -246,7 +60,7 @@
       <div class="warp-wrap"><button id="warpBtn" disabled></button></div>
     </section>
     <section id="view-checklist" hidden>
-      <button class="link-btn back-btn" id="checklistBack">← Back to alerts</button>
+      <button class="key back-btn" id="checklistBack">← Back to alerts</button>
       <h2 id="checklistTitle"></h2>
       <div id="checklistRoot"></div>
     </section>
@@ -254,24 +68,24 @@
 </div>
 
 <div class="modal" id="modal" hidden>
-  <div class="box" id="mBox">
+  <div class="box metal" id="mBox">
     <div class="sym" id="mSym"></div>
     <h2 id="mTitle"></h2>
     <div class="state" id="mState"></div>
-    <div class="content" id="mContent"></div>
+    <div class="content crt" id="mContent"></div>
     <form id="codeForm" autocomplete="off" hidden>
       <input id="codeInput" aria-label="Enter code" placeholder="Enter code" autocapitalize="characters" autocorrect="off" spellcheck="false">
       <button class="btn" type="submit">Submit</button>
     </form>
-    <div id="wirePanel" hidden>
+    <div id="wirePanel" class="well" hidden>
       <svg id="wireSvg" role="group" aria-label="Wiring panel"></svg>
       <div class="wire-actions" id="wireActions">
-        <button class="link-btn" id="wireReset">Disconnect all</button>
+        <button class="key" id="wireReset">Disconnect all</button>
         <button class="btn" id="wirePower">Power on</button>
       </div>
     </div>
     <div id="codeError" role="alert"></div>
-    <button class="btn" id="mClose">Close</button>
+    <button class="key" id="mClose">Close</button>
   </div>
 </div>
 
@@ -298,7 +112,7 @@
       document.body.appendChild(msg);
     };
     document.body.appendChild(s);
-  })(["config.js", "state.js", "checklist.js", "game.js"]);
+  })(["config.js", "state.js", "sounds.js", "widgets.js", "checklist.js", "game.js"]);
 </script>
 </body>
 </html>
