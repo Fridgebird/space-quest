@@ -152,8 +152,8 @@ main h2 { font-size: 1.4rem; margin: 0 0 16px; opacity: .92; }
 /* ---------- Crew Manifest: personnel files with monitor portraits ---------- */
 .files { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 @media (max-width: 640px) { .files { grid-template-columns: minmax(0, 1fr); } }
-.file { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 14px; padding: 10px; border-radius: 6px; background: var(--recess); box-shadow: inset 0 2px 6px rgba(0,0,0,.8), 0 1px 0 rgba(255,255,255,.06); min-width: 0; }
-.file .photo { position: relative; width: 104px; height: 130px; border-radius: 6px; overflow: hidden; background: var(--crt-bg); box-shadow: 0 0 0 3px #050302, 0 0 0 5px #2a2d27; }
+.file { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 14px; padding: 10px; border-radius: 6px; background: var(--recess); box-shadow: inset 0 2px 6px rgba(0,0,0,.8), 0 1px 0 rgba(255,255,255,.06); min-width: 0; }
+.file .photo { position: relative; width: 120px; height: 150px; border-radius: 6px; overflow: hidden; background: var(--crt-bg); box-shadow: 0 0 0 3px #050302, 0 0 0 5px #2a2d27; }
 .file .photo img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
 .file .photo::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(to bottom, rgba(0,0,0,.28) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55)); }
 .rec { min-width: 0; display: grid; align-content: start; gap: 2px; font-family: var(--crt-face); color: var(--amber); text-shadow: 0 0 5px rgba(255,176,59,.5); font-size: 1.25rem; line-height: 1.05; }

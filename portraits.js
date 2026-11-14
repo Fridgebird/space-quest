@@ -1,10 +1,10 @@
-// Crew portraits in the ship's amber monitor style: a small, 6-tone dithered picture.
+// Crew portraits in the ship's amber monitor style: a small, 8-tone dithered picture.
 // Mission Control turns each photo into one of these before saving it (a few KB), and
 // the tablet draws a matching silhouette for anyone without a photo.
 
 window.Portraits = (function () {
-  const W = 80, H = 100;  // low resolution on purpose, for the monitor look
-  const PALETTE = [[18, 11, 3], [62, 37, 8], [118, 72, 16], [180, 114, 27], [232, 166, 62], [255, 222, 160]];
+  const W = 120, H = 150; // shown at exactly this size, so each pixel stays crisp
+  const PALETTE = [[16, 10, 3], [48, 29, 6], [88, 54, 12], [130, 80, 18], [176, 111, 26], [218, 145, 44], [246, 186, 92], [255, 228, 175]];
   const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
   const cache = {};
 
@@ -43,7 +43,7 @@ window.Portraits = (function () {
         const sw = have > want ? img.height * want : img.width;
         const sh = have > want ? img.height : img.width / want;
         const crop = document.createElement("canvas");
-        crop.width = W * 3; crop.height = H * 3;
+        crop.width = W * 2; crop.height = H * 2;
         crop.getContext("2d").drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2 * 0.6, sw, sh, 0, 0, crop.width, crop.height);
         URL.revokeObjectURL(img.src);
         resolve(dither(crop));
