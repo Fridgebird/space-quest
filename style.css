@@ -293,6 +293,26 @@ main h2 { font-size: 1.4rem; margin: 0 0 16px; opacity: .92; }
 .w-pos { font-size: .72rem; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; min-height: 1em; }
 .w-tgl .w-name { min-height: 2.4em; display: grid; place-items: center; }
 
+.w-mcb { display: grid; justify-items: center; gap: 2px; width: 82px; }
+.w-mcb-body { all: unset; cursor: pointer; position: relative; display: grid; justify-items: center; gap: 6px; width: 50px; padding: 8px 0 10px; border-radius: 3px;
+  background: linear-gradient(90deg, #cfc9b3, #ece6d0 40%, #d8d2bb); border: 1px solid #7c7766; box-shadow: 0 3px 0 #0b0c0a, inset 0 1px 0 #fff; }
+.w-mcb-window { width: 16px; height: 8px; border-radius: 1px; background: #c0201b; box-shadow: inset 0 1px 2px rgba(0,0,0,.6); transition: background .15s; }
+.w-mcb.down .w-mcb-window { background: #1f8a3e; }
+.w-mcb-slot { position: relative; width: 22px; height: 56px; border-radius: 3px; background: #2b2a25; box-shadow: inset 0 2px 4px #000; }
+.w-mcb-lever { position: absolute; left: 2px; right: 2px; top: 2px; height: 26px; border-radius: 2px; background: linear-gradient(#55534b, #2c2b27); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 2px 2px rgba(0,0,0,.5); transition: top .12s ease-in; }
+.w-mcb-lever::after { content: ""; position: absolute; left: 3px; right: 3px; top: 50%; height: 2px; margin-top: -1px; background: rgba(255,255,255,.25); }
+.w-mcb.down .w-mcb-lever { top: 28px; }
+.w-mcb .w-name { min-height: 2.4em; display: grid; place-items: center; }
+
+.w-rubber { display: flex; align-items: center; gap: 10px; }
+.w-rubber .w-name { text-align: left; max-width: 7em; }
+.w-rubber-btn { all: unset; cursor: pointer; width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+  background: radial-gradient(circle at 40% 35%, #4a4a46, #1c1c1a 70%); border: 3px solid #0e0e0d;
+  box-shadow: 0 3px 0 #050505, 0 0 0 4px #2c2f29, inset 0 1px 1px rgba(255,255,255,.18); transition: transform .05s, box-shadow .05s; }
+.w-rubber-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #050505, 0 0 0 4px #2c2f29; }
+.cl-lamp-row { display: flex; align-items: center; gap: 8px; }
+.cl-lamp-row .w-lamp { margin-bottom: 0; }
+
 .w-sel { position: relative; width: 230px; max-width: 100%; height: 180px; }
 .w-sel-knob { position: absolute; left: 50%; top: 66px; width: 110px; height: 110px; margin-left: -55px; cursor: pointer; }
 .w-sel-g { transform-box: view-box; transform-origin: 55px 55px; transition: transform .15s cubic-bezier(.3,1.6,.6,1); }

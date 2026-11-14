@@ -101,6 +101,30 @@ window.Widgets = (function () {
     return api;
   }
 
+  // ---------- Fuse-box breaker: a cream plastic body with a lever and a red/green window ----------
+  function breaker({ name, up, down }) {
+    const wrap = el("div", "w-mcb");
+    wrap.appendChild(el("span", "w-pos", up));
+    const b = el("button", "w-mcb-body");
+    b.type = "button";
+    const slot = el("span", "w-mcb-slot");
+    slot.appendChild(el("span", "w-mcb-lever"));
+    b.append(el("span", "w-mcb-window"), slot);
+    wrap.appendChild(b);
+    wrap.appendChild(el("span", "w-pos", down));
+    wrap.appendChild(el("span", "w-name", name));
+    const api = {
+      el: wrap, onFlip: null,
+      set(isUp) {
+        wrap.classList.toggle("down", !isUp);
+        b.setAttribute("aria-pressed", String(!!isUp));
+        b.setAttribute("aria-label", name + ": " + (isUp ? up : down));
+      }
+    };
+    b.addEventListener("click", () => { if (api.onFlip) api.onFlip(); });
+    return api;
+  }
+
   // ---------- Rotary selector (chicken-head knob between labelled positions) ----------
   function selector({ name, options }) {
     const wrap = el("div", "w-sel");
@@ -224,6 +248,17 @@ window.Widgets = (function () {
     b.addEventListener("click", () => { if (api.onPress) api.onPress(); });
     return api;
   }
+  // A small fingertip rubber button with its label beside it.
+  function rubberButton({ label }) {
+    const wrap = el("div", "w-rubber");
+    const b = el("button", "w-rubber-btn");
+    b.type = "button";
+    b.setAttribute("aria-label", label);
+    wrap.append(b, el("span", "w-name", label));
+    const api = { el: wrap, onPress: null };
+    b.addEventListener("click", () => { if (api.onPress) api.onPress(); });
+    return api;
+  }
   function mushroom({ label }) {
     const b = el("button", "w-mushroom", label);
     b.type = "button";
@@ -317,5 +352,5 @@ window.Widgets = (function () {
     };
   }
 
-  return { el, svgEl, shake, sevenSeg, lamp, toggle, selector, knob, fader, pushButton, mushroom, guarded, gauge, ledBar };
+  return { el, svgEl, shake, sevenSeg, lamp, toggle, breaker, rubberButton, selector, knob, fader, pushButton, mushroom, guarded, gauge, ledBar };
 })();

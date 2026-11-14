@@ -11,10 +11,11 @@ window.Checklist = (function () {
   const FULL_PRESSURE = 100, DRAIN_PER_SEC = 100 / 120, TOP_UP = 3, LOW = 10, HIGH = 30;
   const ENGINE_SECONDS = 6;                  // rubidium output climbing to 100
   const REGULATOR_START = 0.5;
+  const PING_MS = 1300;                      // undervolt alarm repeat
   const W = window.Widgets;
 
   let S, onComplete, engineMsg = "";
-  let mounted = false;
+  let mounted = false, lastPing = 0;
   const syncs = [];                          // redraw functions, one per piece of hardware
   const top = {};
 
@@ -172,6 +173,15 @@ window.Checklist = (function () {
     syncs.push(() => { t.set(c.get() === up); if (lampFn) t.lamp(lampFn()); });
     return t;
   }
+  // A fuse-box style breaker paddle. It can trip back down by itself.
+  function addBreaker(host, id, name, up) {
+    const c = C[id], down = c.options.find((o) => o !== up);
+    const b = W.breaker({ name, up, down });
+    b.onFlip = () => { if (attempt(id, c.get() === up ? down : up)) Sfx.clunk(); };
+    c.ui = b.el;
+    host.appendChild(b.el);
+    syncs.push(() => b.set(c.get() === up));
+  }
   function addSelector(host, id, name) {
     const c = C[id];
     const s = W.selector({ name, options: c.options });
@@ -273,7 +283,7 @@ window.Checklist = (function () {
     m = module(grid, "Field control", "bank");
     row = el("div", "cl-toggles well"); m.appendChild(row);
     addToggle(row, "resonator", "Subspace resonator", "Override");
-    addToggle(row, "polarity", "Neutron flow polarity", "Reversed");
+    addBreaker(row, "polarity", "Neutron flow polarity", "Reversed");
     addToggle(row, "bypass", "Static containment bypass", "Enabled");
 
     m = module(grid, "CRM114 discriminator");
@@ -302,7 +312,10 @@ window.Checklist = (function () {
     const valveRow = el("div", "cl-buttons");
     m.appendChild(valveRow);
     addToggle(valveRow, "cartridge", "Atmospheric thermal plasma cartridge valves", "Open");
-    addPush(valveRow, "reserve", "Aux reserve +" + TOP_UP, "black");
+    const reserve = W.rubberButton({ label: "Aux reserve +" + TOP_UP });
+    reserve.onPress = () => { if (attempt("reserve")) Sfx.tick(); };
+    C.reserve.ui = reserve.el;
+    valveRow.appendChild(reserve.el);
     C.cartridge.ui = m;
     syncs.push(() => press.set(S.pressure, S.pressure.toFixed(1) + " µPa"));
 
@@ -319,10 +332,14 @@ window.Checklist = (function () {
     });
 
     m = module(grid, "Oxygen tanks");
+    const o2Power = W.lamp("green");
+    const o2Row = el("div", "cl-lamp-row");
+    o2Row.append(o2Power.el, el("span", "w-name", "Power"));
     const stir = W.mushroom({ label: "STIR" });
     stir.onPress = () => { if (attempt("oxygen")) Sfx.clunk(); };
     C.oxygen.ui = stir.el;
-    m.appendChild(stir.el);
+    m.append(o2Row, stir.el);
+    syncs.push(() => o2Power.set(S.battery));
 
     // Breakers and engine: covered switches and the engine's status screen.
     m = module(grid, "Breakers & engine", "full");
@@ -366,9 +383,14 @@ window.Checklist = (function () {
       S.temp = S.temp < target ? Math.min(target, S.temp + step) : Math.max(target, S.temp - step);
       if (S.valves === "Open") S.pressure = Math.max(0, S.pressure - DRAIN_PER_SEC * dt);
       if (S.platesAt && !S.battery && t - S.platesAt > PLATE_SECONDS * 1000) {
-        S.charge = 100; S.platesAt = 0;
+        // The warp fuse trips: the plates recharge and the polarity breaker trips back to Nominal.
+        S.charge = 100; S.platesAt = 0; S.polarity = "Nominal";
         fail("plates");
+        W.shake(C.polarity.ui);
+        Sfx.clunk();
       }
+      // The B bus undervolt pings until the breaker is flipped.
+      if (S.undervolt && t - lastPing >= PING_MS) { lastPing = t; Sfx.ping(); }
       if (S.engineAt && t - S.engineAt >= ENGINE_SECONDS * 1000) {
         S.fired = true;
         if (onComplete) onComplete();
