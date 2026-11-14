@@ -187,8 +187,8 @@
   .cl-card.dead .cl-val { color: var(--red); }
   .cl-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
   .cl-label { font-weight: 700; font-size: 1rem; overflow-wrap: anywhere; }
-  .cl-tags { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
-  .cl-lock[hidden] { display: none; }
+  .cl-lamp { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: #2a1d10; border: 2px solid #4a3a20; }
+  .cl-lamp.lit { background: radial-gradient(circle at 35% 35%, #fff6cf, #ffc533 55%, #d98e00); border-color: #ffd166; box-shadow: 0 0 14px rgba(255,197,51,.8); }
   .cl-val { font-family: "Orbitron", sans-serif; color: var(--cyan); font-size: 1.15rem; margin: 6px 0 10px; overflow-wrap: anywhere; }
   .cl-val.good { color: var(--green); }
   .cl-row { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -201,9 +201,9 @@
   .cl-fire { width: 100%; min-height: 60px; font-family: "Orbitron", sans-serif; font-size: 1.15rem; background: var(--violet); border-color: #fff; }
   .cl-input { flex: 1 1 90px; min-width: 0; min-height: 44px; font: inherit; font-size: 1.1rem; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--cyan); background: #0a0d24; color: var(--text); }
   .cl-gauge { position: relative; height: 14px; border-radius: 999px; background: #0a0d24; border: 1px solid #3a4170; margin-bottom: 10px; overflow: hidden; }
-  .cl-gauge-fill { height: 100%; background: #ffd166; }
+  .cl-gauge-fill { height: 100%; background: #ffd166; transition: width .25s linear; }
   .cl-gauge-fill.in-range { background: var(--green); }
-  .cl-gauge-mark { position: absolute; top: 0; bottom: 0; left: 30%; width: 2px; background: var(--red); }
+  .cl-gauge-band { position: absolute; top: 0; bottom: 0; z-index: 1; border-left: 2px solid var(--red); border-right: 2px solid var(--red); }
 </style>
 </head>
 <body>

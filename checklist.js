@@ -1,28 +1,34 @@
-// Technobabble Checklist: the control panel behind the checklist alert.
-// The rules are described in checklist-design.md. The panel's state is kept on
-// this device only (localStorage), because only the tablet uses it.
+// Warp core start-up: the control panel behind the checklist alert.
+// Three posters (Electrical, Dilithium, Plasma) are read out by runners; the rules are
+// described in checklist-design.md. The panel's state is kept on this device only
+// (localStorage), because only the tablet uses it.
 
 window.Checklist = (function () {
-  const KEY = "quest-checklist:" + window.GAME_ID;
-  const PLATE_SECONDS = 10, TURBINE_COOL_SECONDS = 20, PRIME_SECONDS = 5;
-  const DRAIN_SECONDS = 120, VALVE_TARGET = 30, DEPLETED = 10;
+  const KEY = "quest-warpcore:" + window.GAME_ID;
+  const PLATE_SECONDS = 10;                  // to connect the battery after discharging the plates
+  const AMBIENT_F = 70, TARGET_F = 451, HEAT_F_PER_SEC = 10;
+  const FULL_PRESSURE = 100, DRAIN_PER_SEC = 100 / 120, TOP_UP = 3, LOW = 10, HIGH = 30;
+  const ENGINE_SECONDS = 6;                  // rubidium gauge climbing to 100
 
-  let S, onComplete, pulseMsg = "";
+  let S, onComplete, engineMsg = "";
   const els = {};
 
   function fresh() {
     return {
-      wipers: 0, polarity: "Normal", stirred: false, undervolt: false,
-      gamma: false, co: false, bypass: "Enabled", bypassWasDisabled: false,
-      rubidium: 100, flux: "Off", plates: "Dirty", platesAt: 0, battery: false,
-      radio: 980, crm: "Transmit", erbium: false, turbineCoolUntil: 0,
-      plasma: 20, deuterium: 10, valves: "Open", drainStart: 0, drainFrom: 100, frozenP: 100,
-      integrator: "On", primeUntil: 0, fired: false
+      // Electrical
+      flux: "Off", crm: "Transmit", resonator: "Nominal", grid: "Off", radio: 980,
+      stirred: false, undervolt: false, relay: "Off",
+      // Dilithium
+      injection: "Free", bypass: "Enabled", bypassWasDisabled: false, polarity: "Nominal",
+      charge: 100, platesAt: 0, battery: false, integrator: "Locked",
+      // Plasma
+      conduits: "Off", heater: "Off", temp: AMBIENT_F, valves: "Shut", pressure: FULL_PRESSURE,
+      rubidium: 100,
+      engineAt: 0, fired: false, lastTick: 0
     };
   }
   function load() {
     try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) { S = fresh(); }
-    if (S.integrator === "ON" || S.integrator === "OFF") S.integrator = S.integrator === "ON" ? "On" : "Off";
   }
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
@@ -30,13 +36,16 @@ window.Checklist = (function () {
 
   const now = () => Date.now();
   const secsLeft = (until) => Math.max(0, Math.ceil((until - now()) / 1000));
+  const busy = () => S.fired || S.engineAt > 0;
 
-  function pressure() {
-    if (!S.drainStart || S.valves === "Shut") return S.frozenP;
-    return Math.max(0, S.drainFrom - (now() - S.drainStart) / 1000 * (100 / DRAIN_SECONDS));
-  }
-  const emitterCharged = () => S.plasma === 451 || (S.primeUntil > 0 && now() >= S.primeUntil);
-  const priming = () => S.primeUntil > 0 && now() < S.primeUntil;
+  // Things that are worked out from the switches rather than set directly.
+  const radioOK = () => !S.undervolt && S.radio === 1422;
+  const relayLit = () => S.relay === "On" && S.flux === "On" && S.crm === "Receive"
+    && S.resonator === "Override" && radioOK() && S.integrator === "Unlocked";
+  const manifoldNominal = () => S.integrator === "Unlocked";
+  const heating = () => S.heater === "On" && S.grid === "On" && S.conduits === "On";
+  const pressureOK = () => S.pressure >= LOW && S.pressure <= HIGH;
+  const engineOutput = () => (S.fired ? 100 : S.engineAt ? Math.min(100, (now() - S.engineAt) / (ENGINE_SECONDS * 10)) : 0);
 
   // Gives a control's card one shake and a red edge, when a press doesn't work.
   // It never says why: the crew have to work that out from the posters.
@@ -48,125 +57,101 @@ window.Checklist = (function () {
     c.card.classList.add("nope");
   }
 
-  // Runs a change, then brings the erbium warp online if this change completed its conditions.
   function act(fn) {
-    if (S.fired) return;
-    pulseMsg = "";
-    const before = S.flux === "On" && S.crm === "Receive";
+    if (busy()) return;
+    engineMsg = "";
     fn();
-    if (!before && S.flux === "On" && S.crm === "Receive" && !S.erbium) {
-      S.erbium = true;
-    }
     save();
     update();
   }
 
-  // Each control: kind is "seg" (choose an option), "num" (type a value), "step" (- / +),
-  // "btn" (press) or "light" (read-only). bus: true means it's on the main B bus.
-  // lock(value) returns a reason the change isn't allowed yet, or nothing.
+  // Each control: kind is "seg" (choose an option), "num" (type a value), "btn" (press)
+  // or "light" (read-only). bus: true means it's on the main B bus.
+  // lock(value) is true while that change isn't allowed yet; the card just shakes.
+  // lamp() gives a switch its own indicator light. The order here is the order on screen,
+  // deliberately mixed up so the posters' controls are scattered around the panel.
   const CONTROLS = [
-    { id: "wipers", label: "Wipers", kind: "step", min: 0, max: 10,
-      show: () => S.wipers, set: (v) => { S.wipers = v; } },
-    { id: "gamma", label: "Gamma wave collectors", kind: "btn", action: "Clean",
-      press: () => { S.gamma = true; } },
     { id: "flux", label: "Flux capacitor", kind: "seg", options: ["Off", "On"],
-      get: () => S.flux, set: (v) => { S.flux = v; },
-      lock: (v) => v === "On" && S.polarity !== "Reversed" },
-    { id: "radio", label: "Sub-ether radio", kind: "num", bus: true, min: 0, max: 2000, unit: "kHz",
+      get: () => S.flux, set: (v) => { S.flux = v; } },
+    { id: "injection", label: "Antiproton injection seal", kind: "seg", options: ["Free", "Inhibited", "Token"],
+      get: () => S.injection, set: (v) => { S.injection = v; } },
+    { id: "conduits", label: "Plasma conduits", kind: "seg", options: ["Off", "On"],
+      get: () => S.conduits, set: (v) => { S.conduits = v; }, lamp: () => S.conduits === "On" },
+    { id: "radio", label: "Sub-ether radio", kind: "num", bus: true, min: 0, max: 2000,
       show: () => S.radio + " kHz", set: (v) => { S.radio = v; } },
-    { id: "plates", label: "Dimethyl plates", kind: "btn", action: "Clean",
-      lock: () => S.rubidium !== 230,
-      press: () => { if (S.plates !== "Clean" && !S.battery) { S.plates = "Clean"; S.platesAt = now(); } } },
+    { id: "polarity", label: "Neutron flow polarity", kind: "seg", options: ["Nominal", "Reversed"],
+      get: () => S.polarity, set: (v) => { S.polarity = v; },
+      lock: (v) => v === "Reversed" && !(S.bypass === "Disabled" && S.resonator === "Override") },
+    { id: "rubidium", label: "Rubidium limiter", kind: "num", min: 0, max: 300,
+      show: () => S.rubidium + " einsteins", set: (v) => { S.rubidium = v; },
+      gauge: () => engineOutput(), gaugeOk: () => engineOutput() >= 100 },
+    { id: "resonator", label: "Subspace resonator", kind: "seg", options: ["Nominal", "Override"],
+      get: () => S.resonator, set: (v) => { S.resonator = v; } },
+    { id: "plates", label: "Dimethyl plates", kind: "btn", action: "Discharge",
+      show: () => "CHARGE " + S.charge + "%", gauge: () => S.charge,
+      lock: () => !(S.injection === "Inhibited" && S.bypass === "Disabled" && S.polarity === "Reversed"),
+      press: () => { if (!S.battery && S.charge > 0) { S.charge = 0; S.platesAt = now(); } } },
+    { id: "heater", label: "Plasma injectors", kind: "seg", options: ["Off", "On"],
+      show: () => Math.round(S.temp) + "°F", get: () => S.heater, set: (v) => { S.heater = v; } },
+    { id: "crm", label: "CRM114 discriminator", kind: "seg", options: ["Transmit", "Standby", "Receive"],
+      get: () => S.crm, set: (v) => { S.crm = v; } },
+    { id: "bypass", label: "Static containment bypass", kind: "seg", options: ["Enabled", "Disabled"],
+      get: () => S.bypass,
+      set: (v) => { S.bypass = v; if (v === "Disabled") S.bypassWasDisabled = true; } },
+    { id: "oxygen", label: "Oxygen tanks", kind: "btn", action: "Stir",
+      press: () => { if (!S.stirred) { S.stirred = true; S.undervolt = true; } } },
     { id: "battery", label: "6V battery → positive plate", kind: "btn", action: "Connect",
       press: () => {
         if (S.battery) return;
-        if (S.plates !== "Clean") return fail("battery");
-        S.battery = true;
+        if (!S.platesAt) return fail("battery");
+        S.battery = true; S.platesAt = 0;
       } },
-    { id: "polarity", label: "Neutron flow polarity", kind: "seg", options: ["Normal", "Reversed"],
-      get: () => S.polarity, set: (v) => { S.polarity = v; } },
-    { id: "rubidium", label: "Rubidium limiter", kind: "num", bus: true, min: 0, max: 300,
-      show: () => S.rubidium, set: (v) => { S.rubidium = v; },
-      lock: () => S.bypass !== "Disabled" },
-    { id: "crm", label: "CRM114 discriminator", kind: "seg", bus: true, options: ["Transmit", "Standby", "Receive"],
-      get: () => S.crm, set: (v) => { S.crm = v; },
-      lock: () => S.radio !== 1422 },
-    { id: "oxygen", label: "Oxygen tanks", kind: "btn", action: "Stir",
-      press: () => { if (!S.stirred) { S.stirred = true; S.undervolt = true; } } },
-    { id: "bypass", label: "Static containment bypass", kind: "seg", options: ["Enabled", "Disabled"],
-      get: () => S.bypass,
-      set: (v) => { S.bypass = v; if (v === "Disabled") S.bypassWasDisabled = true; },
-      lock: (v) => (v === "Disabled" && !S.gamma) || (v === "Enabled" && !S.battery) },
-    { id: "plasma", label: "Plasma injectors", kind: "num", min: 0, max: 1000, unit: "°C",
-      show: () => S.plasma + "°C", set: (v) => { S.plasma = v; },
-      lock: () => !S.co },
-    { id: "erbium", label: "Erbium warp", kind: "light",
-      show: () => (S.erbium ? "ONLINE" : "OFFLINE"), good: () => S.erbium },
-    { id: "turbine", label: "Cadmium turbine", kind: "btn", action: "Restart",
-      press: () => {
-        if (now() < S.turbineCoolUntil) return fail("turbine");
-        if (!S.erbium) { S.erbium = true; return; }
-        // Overspeed: restarting a turbine that's already running knocks the erbium warp offline.
-        S.erbium = false; S.turbineCoolUntil = now() + TURBINE_COOL_SECONDS * 1000;
-        fail("turbine");
-      } },
-    // Flipping the breaker always cycles the B bus, so the B bus controls go back to their
-    // starting values even if the bus was fine.
-    { id: "breaker", label: "Fuse breaker", kind: "btn", action: "Flip",
-      press: () => { S.undervolt = false; S.rubidium = 100; S.radio = 980; S.crm = "Transmit"; } },
-    { id: "deuterium", label: "Deuterium tank pressure", kind: "num", min: 0, max: 100,
-      show: () => S.deuterium, lock: () => S.plasma !== 451,
-      set: (v) => {
-        S.deuterium = v;
-        if (v === 42 && !S.drainStart) { S.drainStart = now(); S.drainFrom = S.frozenP; }
-      } },
-    { id: "fuel", label: "Fuel cell 3 valves", kind: "seg", options: ["Open", "Shut"], gauge: true,
-      show: () => pressure().toFixed(1) + " µSv", get: () => S.valves,
-      set: (v) => {
-        if (v === "Shut") { S.frozenP = pressure(); S.valves = "Shut"; }
-        else { S.valves = "Open"; if (S.drainStart) { S.drainFrom = S.frozenP; S.drainStart = now(); } }
-      } },
-    { id: "co", label: "Carbon monoxide pins", kind: "btn", action: "Scrub",
-      press: () => { S.co = true; } },
-    { id: "integrator", label: "Fused matter/antimatter integrator: emergency bypass", kind: "seg", options: ["On", "Off"],
+    { id: "cartridge", label: "Atmospheric thermal plasma", kind: "seg", options: ["Open", "Shut"],
+      show: () => S.pressure.toFixed(1) + " µPa", get: () => S.valves, set: (v) => { S.valves = v; },
+      lock: (v) => v === "Open" && S.temp < TARGET_F,
+      gauge: () => S.pressure, band: [LOW, HIGH], gaugeOk: pressureOK,
+      extra: { action: "Auxiliary reserve +" + TOP_UP,
+        press: () => { S.pressure = Math.min(FULL_PRESSURE, S.pressure + TOP_UP); } } },
+    { id: "grid", label: "Power transfer grid", kind: "seg", options: ["Off", "On"],
+      get: () => S.grid, set: (v) => { S.grid = v; } },
+    { id: "integrator", label: "Fused matter/antimatter integrator: emergency bypass", kind: "seg", options: ["Locked", "Unlocked"],
       get: () => S.integrator, set: (v) => { S.integrator = v; },
-      lock: () => !(S.bypass === "Enabled" && S.bypassWasDisabled) },
-    { id: "emitter", label: "Tachyon emitter", kind: "btn", action: "Prime",
-      show: () => (emitterCharged() ? "CHARGED" : priming() ? "CHARGING " + secsLeft(S.primeUntil) + "s" : "UNCHARGED"),
-      press: () => { if (!emitterCharged() && !priming()) S.primeUntil = now() + PRIME_SECONDS * 1000; } },
-    { id: "pulse", label: "Tachyon pulse", kind: "btn", action: "Initiate", wide: true,
-      show: () => (S.fired ? "FIRED" : pulseMsg || "STANDING BY"),
+      lock: (v) => v === "Unlocked" && !(S.bypass === "Enabled" && S.battery) },
+    // Flipping the breaker always cycles the B bus, so the radio goes back to its
+    // starting frequency even if the bus was fine.
+    { id: "breaker", label: "Fuse breaker", kind: "btn", action: "Flip",
+      press: () => { S.undervolt = false; S.radio = 980; } },
+    { id: "manifold", label: "Gravimetric field displacement manifold", kind: "light",
+      show: () => (manifoldNominal() ? "NOMINAL" : "FLUCTUATING"), good: manifoldNominal },
+    { id: "relay", label: "Antimatter relay", kind: "seg", options: ["Off", "On"],
+      get: () => S.relay, set: (v) => { S.relay = v; }, lamp: relayLit },
+    { id: "engine", label: "Supersonic combustion engine", kind: "btn", action: "Start", wide: true,
+      show: () => (S.fired ? "RUNNING · WARP CORE ONLINE" : S.engineAt ? "STARTING…" : engineMsg || "STANDBY"),
+      good: () => S.fired,
       press: () => {
-        // A failed pulse names the first thing still wrong, so the crew can always finish.
+        // The engine waits for the relay and the rubidium limiter. After that, a failed start
+        // names the first thing still wrong, so the crew can always finish.
+        if (!relayLit() || S.rubidium !== 230) return fail("engine");
         const problem = firstProblem();
-        if (problem) { pulseMsg = "FAILED: " + problem; return fail("pulse"); }
-        S.fired = true;
-        if (onComplete) onComplete();
+        if (problem) { engineMsg = "FAILED: " + problem; return fail("engine"); }
+        S.engineAt = now();
       } }
   ];
 
   function firstProblem() {
-    const p = pressure();
     const checks = [
-      [S.wipers === 7, "wipers setting incorrect"],
-      [S.polarity === "Reversed", "neutron flow polarity incorrect"],
       [S.stirred, "oxygen tanks not stirred"],
-      [!S.undervolt, "main B bus undervolt"],
-      [S.gamma, "gamma wave collectors dirty"],
-      [S.co, "carbon monoxide pins dirty"],
+      [S.grid === "On", "power transfer grid off"],
+      [S.injection === "Inhibited", "antiproton injection seal not inhibited"],
       [S.bypassWasDisabled, "static containment bypass has not been cycled"],
       [S.bypass === "Enabled", "static containment bypass disabled"],
-      [S.rubidium === 230, "rubidium limiter setting incorrect"],
-      [S.flux === "On", "flux capacitor off"],
-      [S.battery, "dimethyl plates not connected"],
-      [S.radio === 1422, "sub-ether radio frequency incorrect"],
-      [S.crm === "Receive", "CRM114 discriminator setting incorrect"],
-      [S.erbium, "erbium warp offline"],
-      [S.plasma === 451, "plasma injector temperature incorrect"],
-      [S.deuterium === 42, "deuterium tank pressure incorrect"],
-      [S.valves === "Shut" && p < VALVE_TARGET && p > DEPLETED, "fuel cell 3 pressure out of range"],
-      [S.integrator === "Off", "integrator emergency bypass active"],
-      [emitterCharged(), "tachyon emitter not charged"]
+      [S.polarity === "Reversed", "neutron flow polarity incorrect"],
+      [S.battery, "positive plate not connected"],
+      [manifoldNominal(), "gravimetric field displacement manifold not nominal"],
+      [S.conduits === "On", "plasma conduits off"],
+      [S.heater === "On" && S.temp >= TARGET_F, "plasma injector temperature too low"],
+      [S.valves === "Shut", "plasma cartridge valves open"],
+      [pressureOK(), "plasma pressure out of range"]
     ];
     const failed = checks.find(([ok]) => !ok);
     return failed ? failed[1] : null;
@@ -174,11 +159,10 @@ window.Checklist = (function () {
 
   // Applies a change from a control, checking power and locks first.
   function attempt(c, value) {
-    if (S.fired) return;
+    if (busy()) return;
     if ((c.bus && S.undervolt) || (c.lock && c.lock(value))) return fail(c.id);
     if (c.kind === "btn") return act(c.press);
-    if ((c.kind === "num" || c.kind === "step")
-      && (!Number.isInteger(value) || value < c.min || value > c.max)) return fail(c.id);
+    if (c.kind === "num" && (!Number.isInteger(value) || value < c.min || value > c.max)) return fail(c.id);
     act(() => c.set(value));
   }
 
@@ -192,12 +176,12 @@ window.Checklist = (function () {
   function build(container) {
     container.innerHTML = "";
     // Two warning lights that are always there. Only B ever lights up, and nothing on
-    // screen says how to fix it: that's on Poster C.
+    // screen says how to fix it: that's on the Plasma poster.
     const lights = el("div", "cl-lights");
     els.lightA = el("div", "cl-light", "MAIN A BUS UNDERVOLT");
     els.lightB = el("div", "cl-light", "MAIN B BUS UNDERVOLT");
     lights.append(els.lightA, els.lightB);
-    els.banner = el("div", "cl-banner armed");
+    els.banner = el("div", "cl-banner");
     const grid = el("div", "cl-grid");
     // The lights and banner stay pinned to the top, so they're visible while scrolled down.
     const top = el("div", "cl-top");
@@ -208,10 +192,11 @@ window.Checklist = (function () {
       const card = el("div", "cl-card" + (c.wide ? " wide" : ""));
       const head = el("div", "cl-head");
       head.append(el("span", "cl-label", c.label));
-      const tags = el("span", "cl-tags");
-      c.lockEl = el("span", "cl-lock", "🔒");
-      tags.append(c.lockEl);
-      head.append(tags);
+      if (c.lamp) {
+        c.lampEl = el("span", "cl-lamp");
+        c.lampEl.setAttribute("role", "img");
+        head.append(c.lampEl);
+      }
       c.valEl = el("div", "cl-val");
       const row = el("div", "cl-row");
       if (c.kind === "seg") {
@@ -231,27 +216,30 @@ window.Checklist = (function () {
         set.addEventListener("click", go);
         input.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
         row.append(input, set);
-      } else if (c.kind === "step") {
-        const minus = el("button", "cl-btn", "−");
-        const plus = el("button", "cl-btn", "+");
-        minus.setAttribute("aria-label", c.label + " down");
-        plus.setAttribute("aria-label", c.label + " up");
-        minus.addEventListener("click", () => attempt(c, S[c.id] - 1));
-        plus.addEventListener("click", () => attempt(c, S[c.id] + 1));
-        row.append(minus, plus);
       } else if (c.kind === "btn") {
-        const b = el("button", "cl-btn" + (c.id === "pulse" ? " cl-fire" : ""), c.action);
+        const b = el("button", "cl-btn" + (c.id === "engine" ? " cl-fire" : ""), c.action);
         b.addEventListener("click", () => attempt(c));
         row.append(b);
       }
+      if (c.extra) {
+        const b = el("button", "cl-btn", c.extra.action);
+        b.addEventListener("click", () => act(c.extra.press));
+        row.append(b);
+      }
+      card.append(head, c.valEl);
       if (c.gauge) {
         c.gaugeFill = el("div", "cl-gauge-fill");
         const gauge = el("div", "cl-gauge");
-        gauge.append(c.gaugeFill, el("div", "cl-gauge-mark"));
-        card.append(head, c.valEl, gauge, row);
-      } else {
-        card.append(head, c.valEl, row);
+        if (c.band) {
+          const band = el("div", "cl-gauge-band");
+          band.style.left = c.band[0] + "%";
+          band.style.width = (c.band[1] - c.band[0]) + "%";
+          gauge.append(band);
+        }
+        gauge.append(c.gaugeFill);
+        card.append(gauge);
       }
+      card.append(row);
       c.card = card;
       card.addEventListener("animationend", () => card.classList.remove("nope"));
       grid.append(card);
@@ -267,35 +255,45 @@ window.Checklist = (function () {
       if (c.valEl.textContent !== text) c.valEl.textContent = text;
       c.valEl.hidden = !text;
       c.valEl.classList.toggle("good", !!(c.good && c.good()));
-      // Show the padlock while the control's next useful change is locked.
-      const target = c.kind === "seg" ? c.options.find((o) => o !== c.get()) : undefined;
-      c.lockEl.hidden = !(c.lock && c.lock(target));
+      if (c.lampEl) {
+        const lit = !!c.lamp();
+        c.lampEl.classList.toggle("lit", lit);
+        c.lampEl.setAttribute("aria-label", lit ? "Light on" : "Light off");
+      }
       if (c.optEls) c.optEls.forEach((b, i) => b.classList.toggle("on", c.options[i] === c.get()));
       if (c.gaugeFill) {
-        const p = pressure();
-        c.gaugeFill.style.width = p + "%";
-        c.gaugeFill.classList.toggle("in-range", p < VALVE_TARGET && p > DEPLETED);
+        c.gaugeFill.style.width = Math.max(0, Math.min(100, c.gauge())) + "%";
+        c.gaugeFill.classList.toggle("in-range", !!(c.gaugeOk && c.gaugeOk()));
       }
     });
     els.lightB.classList.toggle("on", S.undervolt);
-    const armed = S.plates === "Clean" && !S.battery;
+    const armed = S.platesAt > 0 && !S.battery;
     els.banner.hidden = !armed;
-    els.banner.textContent = "⚠ WARP FUSE ARMED: connect the 6V battery in " + secsLeft(S.platesAt + PLATE_SECONDS * 1000) + "s";
+    els.banner.textContent = "⚠ WARP FUSE ARMED · " + secsLeft(S.platesAt + PLATE_SECONDS * 1000) + "s";
   }
 
-  // Timed rules: the plate fuse, the fuel cell running dry, and the countdown readouts.
+  // Time passing: the injectors heating or cooling, the plasma draining while the valves
+  // are open, the warp fuse, and the engine spinning up.
   function tick() {
     if (!els.banner) return;
-    let changed = false;
-    if (S.plates === "Clean" && !S.battery && now() - S.platesAt > PLATE_SECONDS * 1000) {
-      S.plates = "Dirty"; changed = true;
-      fail("plates");
+    const t = now();
+    const dt = S.lastTick ? Math.max(0, (t - S.lastTick) / 1000) : 0;
+    S.lastTick = t;
+    if (!S.fired) {
+      const target = heating() ? TARGET_F : AMBIENT_F;
+      const step = HEAT_F_PER_SEC * dt;
+      S.temp = S.temp < target ? Math.min(target, S.temp + step) : Math.max(target, S.temp - step);
+      if (S.valves === "Open") S.pressure = Math.max(0, S.pressure - DRAIN_PER_SEC * dt);
+      if (S.platesAt && !S.battery && t - S.platesAt > PLATE_SECONDS * 1000) {
+        S.charge = 100; S.platesAt = 0;
+        fail("plates");
+      }
+      if (S.engineAt && t - S.engineAt >= ENGINE_SECONDS * 1000) {
+        S.fired = true;
+        if (onComplete) onComplete();
+      }
     }
-    if (S.drainStart && S.valves === "Open" && pressure() <= DEPLETED) {
-      S.drainFrom = 100; S.drainStart = now(); changed = true;
-      fail("fuel");
-    }
-    if (changed) save();
+    save();
     update();
   }
 
@@ -309,7 +307,7 @@ window.Checklist = (function () {
     },
     reset() {
       S = fresh();
-      pulseMsg = "";
+      engineMsg = "";
       save();
       if (els.banner) update();
     }

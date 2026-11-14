@@ -157,7 +157,7 @@ ALERTS.forEach((a) => {
   tileEls[a.id] = b;
 });
 
-// The Technobabble Checklist has its own screen of controls.
+// The warp core start-up checklist has its own screen of controls.
 const checklistAlert = ALERTS.find((a) => a.checklist);
 if (checklistAlert) {
   $("checklistTitle").textContent = checklistAlert.title;
