@@ -63,7 +63,7 @@ function renderNames(names) {
       make("span", "rk", c.role),
       make("span", "nm", saved.name || "[Name]"),
       make("span", "dim", "RANK: " + c.rank.toUpperCase()),
-      make("span", "dim", (c.droid ? "SERIAL NO. " : "STAFF NO. ") + c.staff),
+      make("span", "dim", "EMPLOYEE NO. " + c.staff),
       make("span", "dim", c.droid ? "STASIS POD: NONE" : "STASIS POD " + pod),
       make("span", "ok", c.droid ? "STATUS: ACTIVE" : "STATUS: REVIVED")
     );
