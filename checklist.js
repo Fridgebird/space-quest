@@ -16,7 +16,7 @@ window.Checklist = (function () {
   function fresh() {
     return {
       // Electrical
-      flux: "Off", crm: "Transmit", resonator: "Nominal", grid: "Off", radio: 980,
+      flux: "Off", crm: "Transmit", resonator: "Nominal", grid: "Off", regulator: 0.5,
       stirred: false, undervolt: false, relay: "Off",
       // Dilithium
       injection: "Free", bypass: "Enabled", bypassWasDisabled: false, polarity: "Nominal",
@@ -39,9 +39,9 @@ window.Checklist = (function () {
   const busy = () => S.fired || S.engineAt > 0;
 
   // Things that are worked out from the switches rather than set directly.
-  const radioOK = () => !S.undervolt && S.radio === 1422;
+  const regulatorOK = () => !S.undervolt && S.regulator === 1.21;
   const relayLit = () => S.relay === "On" && S.flux === "On" && S.crm === "Receive"
-    && S.resonator === "Override" && radioOK() && S.integrator === "Unlocked";
+    && S.resonator === "Override" && regulatorOK() && S.integrator === "Unlocked";
   const manifoldNominal = () => S.integrator === "Unlocked";
   const heating = () => S.heater === "On" && S.grid === "On" && S.conduits === "On";
   const pressureOK = () => S.pressure >= LOW && S.pressure <= HIGH;
@@ -77,8 +77,8 @@ window.Checklist = (function () {
       get: () => S.injection, set: (v) => { S.injection = v; } },
     { id: "conduits", label: "Plasma conduits", kind: "seg", options: ["Off", "On"],
       get: () => S.conduits, set: (v) => { S.conduits = v; }, lamp: () => S.conduits === "On" },
-    { id: "radio", label: "Sub-ether radio", kind: "num", bus: true, min: 0, max: 2000,
-      show: () => S.radio + " kHz", set: (v) => { S.radio = v; } },
+    { id: "regulator", label: "Temporal flux regulator", kind: "num", bus: true, min: 0, max: 10, decimals: 2,
+      show: () => S.regulator.toFixed(2) + " jigawatts", set: (v) => { S.regulator = v; } },
     { id: "polarity", label: "Neutron flow polarity", kind: "seg", options: ["Nominal", "Reversed"],
       get: () => S.polarity, set: (v) => { S.polarity = v; },
       lock: (v) => v === "Reversed" && !(S.bypass === "Disabled" && S.resonator === "Override") },
@@ -119,10 +119,10 @@ window.Checklist = (function () {
     { id: "integrator", label: "Fused matter/antimatter integrator: emergency bypass", kind: "seg", options: ["Locked", "Unlocked"],
       get: () => S.integrator, set: (v) => { S.integrator = v; },
       lock: (v) => v === "Unlocked" && !(S.bypass === "Enabled" && S.battery) },
-    // Flipping the breaker always cycles the B bus, so the radio goes back to its
-    // starting frequency even if the bus was fine.
+    // Flipping the breaker always cycles the B bus, so the flux regulator goes back to
+    // its starting setting even if the bus was fine.
     { id: "breaker", label: "Fuse breaker", kind: "btn", action: "Flip",
-      press: () => { S.undervolt = false; S.radio = 980; } },
+      press: () => { S.undervolt = false; S.regulator = 0.5; } },
     { id: "manifold", label: "Gravimetric field displacement manifold", kind: "light",
       show: () => (manifoldNominal() ? "NOMINAL" : "FLUCTUATING"), good: manifoldNominal },
     { id: "relay", label: "Antimatter relay", kind: "seg", options: ["Off", "On"],
@@ -164,7 +164,13 @@ window.Checklist = (function () {
     if (busy()) return;
     if ((c.bus && S.undervolt) || (c.lock && c.lock(value))) return fail(c.id);
     if (c.kind === "btn") return act(c.press);
-    if (c.kind === "num" && (!Number.isInteger(value) || value < c.min || value > c.max)) return fail(c.id);
+    if (c.kind === "num") {
+      // Whole numbers, or up to `decimals` places (rounded, so 1.21 is exactly 1.21).
+      const places = c.decimals || 0;
+      if (!Number.isFinite(value) || value < c.min || value > c.max) return fail(c.id);
+      if (!places && !Number.isInteger(value)) return fail(c.id);
+      value = Math.round(value * 10 ** places) / 10 ** places;
+    }
     act(() => c.set(value));
   }
 
@@ -210,11 +216,12 @@ window.Checklist = (function () {
         });
       } else if (c.kind === "num") {
         const input = el("input", "cl-input");
-        input.inputMode = "numeric";
+        input.inputMode = c.decimals ? "decimal" : "numeric";
         input.placeholder = c.min + "–" + c.max;
         input.setAttribute("aria-label", c.label);
         const set = el("button", "cl-btn", "Set");
-        const go = () => { attempt(c, input.value.trim() === "" ? NaN : Number(input.value)); input.value = ""; };
+        // Some tablets type a comma for the decimal point.
+        const go = () => { const t = input.value.trim().replace(",", "."); attempt(c, t === "" ? NaN : Number(t)); input.value = ""; };
         set.addEventListener("click", go);
         input.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
         row.append(input, set);
