@@ -47,21 +47,25 @@ function renderNames(names) {
   const files = $("crewFiles");
   files.innerHTML = "";
   const listed = CREW.filter((c) => !c.optional || n.science);
-  listed.forEach((c, i) => {
+  let pod = 0;
+  listed.forEach((c) => {
     const saved = (n.crew && n.crew[c.id]) || {};
-    const file = make("article", "file");
+    const file = make("article", "file" + (c.droid ? " droid" : ""));
     const photo = make("div", "photo");
     const img = make("img");
     img.alt = "";
-    img.src = saved.photo || Portraits.silhouette(CREW.indexOf(c));
+    img.src = saved.photo || Portraits.silhouette(CREW.indexOf(c), c.droid);
     photo.appendChild(img);
     const rec = make("div", "rec");
+    // Crew take the pods in order, skipping the one the stowaway used. The droid has none.
+    if (!c.droid && ++pod === EMPTY_POD) pod++;
     rec.append(
       make("span", "rk", c.role),
       make("span", "nm", saved.name || "[Name]"),
-      make("span", "dim", "STAFF NO. " + c.staff),
-      make("span", "dim", "STASIS POD " + (i + 1)),
-      make("span", "ok", "STATUS: REVIVED")
+      make("span", "dim", "RANK: " + c.rank.toUpperCase()),
+      make("span", "dim", (c.droid ? "SERIAL NO. " : "STAFF NO. ") + c.staff),
+      make("span", "dim", c.droid ? "STASIS POD: NONE" : "STASIS POD " + pod),
+      make("span", "ok", c.droid ? "STATUS: ACTIVE" : "STATUS: REVIVED")
     );
     file.append(photo, rec);
     files.appendChild(file);
@@ -72,7 +76,8 @@ function renderNames(names) {
   plate.append(make("div", "builder engr", SHIP.builder), make("div", "pname engr", ship), make("div", "pclass engr", SHIP.type));
   const dl = make("dl", "engr");
   const rows = SHIP.details.slice();
-  rows.splice(1, 0, ["Cargo", n.cargo || SHIP.cargo], ["Crew", listed.length + " (in stasis)"]);
+  const humans = listed.filter((c) => !c.droid).length;
+  rows.splice(1, 0, ["Cargo", n.cargo || SHIP.cargo], ["Crew", humans + " (in stasis) + 1 service droid"]);
   rows.forEach(([label, value]) => {
     const dd = make("dd");
     if (String(value).toUpperCase() === "UNKNOWN") dd.appendChild(make("span", "unknown", "UNKNOWN"));

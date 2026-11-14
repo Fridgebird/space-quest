@@ -39,20 +39,25 @@ window.SHIP = {
   plateNote: "Max load 48,000 t · DO NOT EXCEED (again)"
 };
 
-// 5) Crew Manifest screen: one entry per rank. Names and photos are added from
-//    Mission Control on the day. `optional: true` ranks only appear when you tick
-//    "Playing today" in Mission Control. The stowaway is never listed.
+// 5) Crew Manifest screen: one entry per post. Names and photos are added from
+//    Mission Control on the day. `rank` is shown on the personnel file.
+//    `optional: true` posts only appear when you tick "Playing today" in Mission Control.
+//    `droid: true` is the ship's own droid: it has no stasis pod. The stowaway is never
+//    listed, and stasis pod 5 is skipped, as a clue that someone else used it.
 //    Don't change an `id` once names have been entered.
 window.CREW = [
-  { id: "captain", role: "Captain", staff: "2626-0001" },
-  { id: "first", role: "First Officer", staff: "2626-0117" },
-  { id: "engineer", role: "Chief Engineer", staff: "2626-0451" },
-  { id: "helm", role: "Navigator/Helm", staff: "2626-0880" },
-  { id: "medical", role: "Medical Officer", staff: "2626-1203" },
-  { id: "security", role: "Chief of Security", staff: "2626-0640" },
-  { id: "comms", role: "Communications Officer", staff: "2626-0042" },
-  { id: "science", role: "Science Officer", staff: "2626-0973", optional: true }
+  { id: "captain", role: "Captain", rank: "Captain", staff: "2626-0001" },
+  { id: "first", role: "First Officer", rank: "Commander", staff: "2626-0117" },
+  { id: "engineer", role: "Chief Engineer", rank: "Lieutenant Commander", staff: "2626-0451" },
+  { id: "helm", role: "Navigator/Helm", rank: "Lieutenant", staff: "2626-0880" },
+  { id: "medical", role: "Medical Officer", rank: "Lieutenant Commander", staff: "2626-1203" },
+  { id: "security", role: "Chief of Security", rank: "Lieutenant", staff: "2626-0640" },
+  { id: "comms", role: "Communications Officer", rank: "Lieutenant (junior grade)", staff: "2626-0042" },
+  { id: "science", role: "Science Officer", rank: "Ensign", staff: "2626-0973", optional: true },
+  { id: "droid", role: "Service Droid", rank: "None (ship's property)", staff: "N/A", droid: true }
 ];
+// The stasis pod nobody on the manifest uses.
+window.EMPTY_POD = 5;
 
 // 6) Messages screen. The first message types itself out when the crew log on.
 //    Each string in `body` is a paragraph.

@@ -88,7 +88,7 @@ if (key !== ADMIN_KEY) {
   });
   function refreshRow(r) {
     const i = CREW.indexOf(r.c);
-    r.img.src = r.photo || Portraits.silhouette(i);
+    r.img.src = r.photo || Portraits.silhouette(i, r.c.droid);
     r.unphoto.hidden = !r.photo;
     const on = !r.playing || r.playing.checked;
     r.row.classList.toggle("off", !on);
