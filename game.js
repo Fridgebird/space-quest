@@ -20,24 +20,76 @@ leds.forEach(shuffleLed);
 if (!reducedMotion) setInterval(() => shuffleLed(leds[Math.floor(Math.random() * leds.length)]), 1400);
 
 // Static screens
-$("logonShip").textContent = SHIP.name;
-$("headerShip").textContent = SHIP.name;
 $("endTitle").textContent = ENDING.title;
 $("endBody").textContent = ENDING.text;
 
-function fillRows(el, rows) {
-  rows.forEach(([label, value]) => {
-    const tr = document.createElement("tr");
-    const th = document.createElement("th");
-    const td = document.createElement("td");
-    th.textContent = label;
-    td.textContent = value;
-    tr.append(th, td);
-    el.appendChild(tr);
+const make = (tag, cls, text) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+};
+
+// Ship and crew names come from Mission Control (state.names); until then the
+// placeholders in config.js are shown.
+let namesShown = null;
+function renderNames(names) {
+  const key = JSON.stringify(names || null);
+  if (key === namesShown) return;
+  namesShown = key;
+  const n = names || {};
+  const ship = n.ship || SHIP.name;
+  $("logonShip").textContent = ship;
+  $("headerShip").textContent = ship;
+
+  // Crew Manifest: a personnel file for each rank. Optional ranks only appear when
+  // ticked as playing; the stowaway is never listed.
+  const files = $("crewFiles");
+  files.innerHTML = "";
+  const listed = CREW.filter((c) => !c.optional || n.science);
+  listed.forEach((c, i) => {
+    const saved = (n.crew && n.crew[c.id]) || {};
+    const file = make("article", "file");
+    const photo = make("div", "photo");
+    const img = make("img");
+    img.alt = "";
+    img.src = saved.photo || Portraits.silhouette(CREW.indexOf(c));
+    photo.appendChild(img);
+    const rec = make("div", "rec");
+    rec.append(
+      make("span", "rk", c.role),
+      make("span", "nm", saved.name || "[Name]"),
+      make("span", "dim", "STAFF NO. " + c.staff),
+      make("span", "dim", "STASIS POD " + (i + 1)),
+      make("span", "ok", "STATUS: REVIVED")
+    );
+    file.append(photo, rec);
+    files.appendChild(file);
   });
+
+  // About the Ship: a stamped builder's plate.
+  const plate = make("div", "plate");
+  plate.append(make("div", "builder engr", SHIP.builder), make("div", "pname engr", ship), make("div", "pclass engr", SHIP.type));
+  const dl = make("dl", "engr");
+  const rows = SHIP.details.slice();
+  rows.splice(1, 0, ["Cargo", n.cargo || SHIP.cargo], ["Crew", listed.length + " (in stasis)"]);
+  rows.forEach(([label, value]) => {
+    const dd = make("dd");
+    if (String(value).toUpperCase() === "UNKNOWN") dd.appendChild(make("span", "unknown", "UNKNOWN"));
+    else dd.textContent = value;
+    dl.append(make("dt", null, label), dd);
+  });
+  plate.appendChild(dl);
+  const holder = $("shipPlate");
+  holder.innerHTML = "";
+  holder.appendChild(plate);
+  if (SHIP.plateNote) {
+    const note = make("div", "plate-note-row");
+    note.appendChild(make("span", "plate-note", SHIP.plateNote));
+    holder.appendChild(note);
+  }
 }
-fillRows($("crewRows"), CREW.map((c) => [c.role, c.name]));
-fillRows($("shipRows"), [["Name", SHIP.name]].concat(SHIP.details));
+renderNames(null);
 
 // Messages. Pass typeFirst to type out the first message.
 function renderMessages(typeFirst) {
@@ -410,6 +462,7 @@ function hideEnding() {
 GameState.subscribe((state) => {
   const fresh = Object.keys(state.cleared).filter((id) => state.cleared[id] && !cleared[id]);
   cleared = state.cleared;
+  renderNames(state.names);
   render(firstLoad ? [] : fresh);
   if (openAlert) renderAlert(false);
   if (!firstLoad && fresh.length) Sfx.chime();

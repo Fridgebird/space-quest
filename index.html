@@ -48,11 +48,11 @@
     </section>
     <section id="view-crew" hidden>
       <h2>Crew Manifest</h2>
-      <div class="card"><table class="rows"><tbody id="crewRows"></tbody></table></div>
+      <div class="files" id="crewFiles"></div>
     </section>
     <section id="view-ship" hidden>
       <h2>About the Ship</h2>
-      <div class="card"><table class="rows"><tbody id="shipRows"></tbody></table></div>
+      <div id="shipPlate"></div>
     </section>
     <section id="view-alerts" hidden>
       <h2>Alerts</h2>
@@ -112,7 +112,7 @@
       document.body.appendChild(msg);
     };
     document.body.appendChild(s);
-  })(["config.js", "state.js", "sounds.js", "widgets.js", "checklist.js", "game.js"]);
+  })(["config.js", "state.js", "sounds.js", "widgets.js", "portraits.js", "checklist.js", "game.js"]);
 </script>
 </body>
 </html>

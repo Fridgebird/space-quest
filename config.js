@@ -22,29 +22,36 @@ window.GAME_ID = "space-quest-2626";
 // 3) The admin page only opens with ?key=<this>, e.g. admin.html?key=rudolph
 window.ADMIN_KEY = "rudolph";
 
-// 4) About the Ship screen. Add, remove or rename any of these rows.
-//    `name` is also shown in the header of the ship's computer.
+// 4) About the Ship screen: the ship's builder's plate.
+//    The ship's name and cargo are filled in from Mission Control on the day; these are
+//    only shown until then. `type` is stamped under the name, and each `details` row
+//    becomes a line on the plate (a value of "UNKNOWN" shows as a red warning).
 window.SHIP = {
   name: "[Ship name]",
+  cargo: "[Cargo]",
+  type: "Solar class bulk carrier",
+  builder: "Built by Lunar Drydock Co. · Yard no. 2626",
   details: [
-    ["Type", "Solar class bulk carrier"],
-    ["Registry", "[Registry number]"],
+    ["Registry", "SCB-2626-0451"],
     ["Home port", "Earth"],
-    ["Cargo", "[Cargo]"],
-    ["Current position", "UNKNOWN"]
-  ]
+    ["Position", "UNKNOWN"]
+  ],
+  plateNote: "Max load 48,000 t · DO NOT EXCEED (again)"
 };
 
-// 5) Crew Manifest screen. One row per player.
+// 5) Crew Manifest screen: one entry per rank. Names and photos are added from
+//    Mission Control on the day. `optional: true` ranks only appear when you tick
+//    "Playing today" in Mission Control. The stowaway is never listed.
+//    Don't change an `id` once names have been entered.
 window.CREW = [
-  { name: "[Crew member 1]", role: "[Role]" },
-  { name: "[Crew member 2]", role: "[Role]" },
-  { name: "[Crew member 3]", role: "[Role]" },
-  { name: "[Crew member 4]", role: "[Role]" },
-  { name: "[Crew member 5]", role: "[Role]" },
-  { name: "[Crew member 6]", role: "[Role]" },
-  { name: "[Crew member 7]", role: "[Role]" },
-  { name: "[Crew member 8]", role: "[Role]" }
+  { id: "captain", role: "Captain", staff: "2626-0001" },
+  { id: "first", role: "First Officer", staff: "2626-0117" },
+  { id: "engineer", role: "Chief Engineer", staff: "2626-0451" },
+  { id: "helm", role: "Navigator/Helm", staff: "2626-0880" },
+  { id: "medical", role: "Medical Officer", staff: "2626-1203" },
+  { id: "security", role: "Chief of Security", staff: "2626-0640" },
+  { id: "comms", role: "Communications Officer", staff: "2626-0042" },
+  { id: "science", role: "Science Officer", staff: "2626-0973", optional: true }
 ];
 
 // 6) Messages screen. The first message types itself out when the crew log on.

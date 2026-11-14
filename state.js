@@ -1,7 +1,8 @@
 // Shared game state. Uses Firebase Realtime Database when configured,
 // otherwise localStorage (demo mode: syncs between tabs in one browser only).
 //
-// State shape: { cleared: { "<alertId>": true, ... }, warped: true, resetAt: <timestamp> }
+// State shape: { cleared: { "<alertId>": true, ... }, warped: true, resetAt: <timestamp>,
+//   names: { ship, cargo, science: true, crew: { "<crewId>": { name, photo } } } }
 
 window.GameState = (function () {
   const FB_VERSION = "10.12.2";
@@ -50,7 +51,7 @@ window.GameState = (function () {
     // Calls cb(state) now and on every change. Optional onConn(bool) reports connection status.
     subscribe(cb, onConn) {
       return init().then(() => {
-        const normalise = (s) => Object.assign({ cleared: {}, warped: false, resetAt: null }, s);
+        const normalise = (s) => Object.assign({ cleared: {}, warped: false, resetAt: null, names: null }, s);
         if (isDemo) {
           const fire = () => cb(normalise(readDemo()));
           window.addEventListener("storage", (e) => { if (e.key === demoKey) fire(); });
@@ -91,10 +92,27 @@ window.GameState = (function () {
       });
     },
 
+    // Saves the ship and crew names (and photos) from Mission Control.
+    setNames(names) {
+      return init().then(() => {
+        if (isDemo) {
+          const s = readDemo();
+          s.names = names;
+          writeDemo(s);
+        } else {
+          return ref.child("names").set(names);
+        }
+      });
+    },
+
     // Raises every alert again and sends the tablet back to the log-on screen.
+    // The ship and crew names are kept.
     reset() {
-      const fresh = { resetAt: Date.now() };
-      return init().then(() => (isDemo ? writeDemo(fresh) : ref.set(fresh)));
+      const resetAt = Date.now();
+      return init().then(() => {
+        if (isDemo) return writeDemo({ resetAt, names: readDemo().names || null });
+        return ref.update({ cleared: null, warped: null, resetAt });
+      });
     }
   };
 })();

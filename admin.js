@@ -7,6 +7,7 @@ if (key !== ADMIN_KEY) {
   app.innerHTML =
     "<h1>🛰️ Mission Control</h1>" +
     '<div class="sub"><span id="count"></span> · <span class="status" id="status">Connecting…</span></div>' +
+    '<details class="names" id="names"><summary>Name the ship &amp; crew</summary><form id="namesForm" autocomplete="off"></form></details>' +
     '<div id="list"></div>' +
     '<div class="warp" id="warp"></div>' +
     '<button class="reset" id="reset">Reset game (raise all alerts, back to log-on)</button>';
@@ -38,11 +39,111 @@ if (key !== ADMIN_KEY) {
     document.getElementById("list").appendChild(row);
   });
 
+  // ---------- Name the ship & crew (after the warm-up) ----------
+  const form = document.getElementById("namesForm");
+  const field = (label, id) => {
+    const wrap = document.createElement("label");
+    wrap.className = "field";
+    wrap.innerHTML = "<span></span><input type=\"text\">";
+    wrap.querySelector("span").textContent = label;
+    const input = wrap.querySelector("input");
+    input.id = id;
+    form.appendChild(wrap);
+    return input;
+  };
+  const shipInput = field("Ship name", "nShip");
+  const cargoInput = field("Cargo", "nCargo");
+  const picker = Object.assign(document.createElement("input"), { type: "file", accept: "image/*", hidden: true });
+  form.appendChild(picker);
+  let pickingFor = null, dirty = false, filled = false;
+  const markDirty = () => { dirty = true; saved.textContent = "Not sent yet"; saved.className = "saved pending"; };
+
+  const crewRows = CREW.map((c, i) => {
+    const row = document.createElement("div");
+    row.className = "crew";
+    row.innerHTML =
+      '<button type="button" class="photo"><img alt=""><span>Photo</span></button>' +
+      '<div class="who"><div class="rank"></div><input type="text"></div>' +
+      '<button type="button" class="unphoto" hidden>Remove photo</button>';
+    row.querySelector(".rank").textContent = c.role;
+    const input = row.querySelector("input");
+    input.setAttribute("aria-label", c.role + " name");
+    input.placeholder = "Name";
+    const img = row.querySelector("img");
+    const unphoto = row.querySelector(".unphoto");
+    const r = { c, row, input, img, unphoto, photo: null, playing: null };
+    if (c.optional) {
+      const lab = document.createElement("label");
+      lab.className = "playing";
+      lab.innerHTML = '<input type="checkbox"> Playing today';
+      r.playing = lab.querySelector("input");
+      r.playing.addEventListener("change", () => { refreshRow(r); markDirty(); });
+      row.querySelector(".rank").appendChild(lab);
+    }
+    row.querySelector(".photo").addEventListener("click", () => { pickingFor = r; picker.value = ""; picker.click(); });
+    unphoto.addEventListener("click", () => { r.photo = null; refreshRow(r); markDirty(); });
+    input.addEventListener("input", markDirty);
+    form.appendChild(row);
+    return r;
+  });
+  function refreshRow(r) {
+    const i = CREW.indexOf(r.c);
+    r.img.src = r.photo || Portraits.silhouette(i);
+    r.unphoto.hidden = !r.photo;
+    const on = !r.playing || r.playing.checked;
+    r.row.classList.toggle("off", !on);
+    r.input.disabled = !on;
+  }
+  crewRows.forEach(refreshRow);
+  picker.addEventListener("change", () => {
+    const f = picker.files && picker.files[0];
+    if (!f || !pickingFor) return;
+    const r = pickingFor;
+    Portraits.fromFile(f).then((url) => { r.photo = url; refreshRow(r); markDirty(); }).catch((e) => alert(e.message));
+  });
+  shipInput.addEventListener("input", markDirty);
+  cargoInput.addEventListener("input", markDirty);
+
+  const send = Object.assign(document.createElement("button"), { type: "submit", className: "send", textContent: "Send to ship" });
+  const saved = Object.assign(document.createElement("div"), { className: "saved" });
+  form.append(send, saved);
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const crew = {};
+    crewRows.forEach((r) => { crew[r.c.id] = { name: r.input.value.trim(), photo: r.photo || null }; });
+    const science = crewRows.find((r) => r.playing);
+    const names = { ship: shipInput.value.trim(), cargo: cargoInput.value.trim(), crew, science: science ? science.playing.checked : false };
+    saved.textContent = "Sending…"; saved.className = "saved pending";
+    GameState.setNames(names).then(() => {
+      dirty = false;
+      saved.textContent = "✓ Sent to the ship"; saved.className = "saved ok";
+    }).catch(() => { saved.textContent = "⚠ Couldn't send. Try again."; saved.className = "saved bad"; });
+  });
+
+  // Fills the form from what's saved, unless you're part-way through editing it.
+  function fillNames(n) {
+    if (dirty) return;
+    n = n || {};
+    shipInput.value = n.ship || "";
+    cargoInput.value = n.cargo || "";
+    crewRows.forEach((r) => {
+      const saved = (n.crew && n.crew[r.c.id]) || {};
+      r.input.value = saved.name || "";
+      r.photo = saved.photo || null;
+      if (r.playing) r.playing.checked = !!n.science;
+      refreshRow(r);
+    });
+    // Open the section until the ship has a name.
+    if (!filled) document.getElementById("names").open = !n.ship;
+    filled = true;
+  }
+
   document.getElementById("reset").addEventListener("click", () => {
-    if (confirm("Reset the whole game and send the tablet back to the log-on screen?")) GameState.reset();
+    if (confirm("Reset the whole game and send the tablet back to the log-on screen? (Names and photos are kept.)")) GameState.reset();
   });
 
   GameState.subscribe((state) => {
+    fillNames(state.names);
     cleared = state.cleared;
     let n = 0;
     ALERTS.forEach((a) => {

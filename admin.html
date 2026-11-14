@@ -33,6 +33,26 @@
   .reset { margin-top: 16px; width: 100%; min-height: 48px; font: inherit; padding: 12px; border-radius: 12px; border: 1px solid #4a5280; background: none; color: var(--muted); cursor: pointer; }
   .denied { text-align: center; margin-top: 30vh; color: var(--muted); }
   .status { font-size: .8rem; color: var(--muted); }
+
+  /* Name the ship & crew */
+  .names { background: var(--card); border-radius: 14px; margin-bottom: 16px; }
+  .names summary { cursor: pointer; padding: 14px; font-weight: 700; font-size: 1.1rem; letter-spacing: .06em; text-transform: uppercase; color: var(--cyan); }
+  .names form { display: grid; gap: 12px; padding: 0 12px 14px; }
+  .field { display: grid; gap: 4px; font-weight: 600; }
+  .field input, .crew input[type="text"] { font: inherit; font-size: 1.05rem; padding: 10px 12px; border-radius: 8px; border: 1px solid #6a7064; background: #141613; color: var(--text); min-width: 0; width: 100%; }
+  .crew { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 4px 10px; align-items: center; padding-top: 10px; border-top: 1px solid #555b50; }
+  .crew .photo { grid-row: span 2; position: relative; width: 64px; height: 80px; padding: 0; border: 0; border-radius: 6px; overflow: hidden; background: #000; cursor: pointer; }
+  .crew .photo img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+  .crew .photo span { position: absolute; left: 0; right: 0; bottom: 0; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; background: rgba(0,0,0,.7); color: #fff; padding: 2px 0; text-align: center; }
+  .crew .rank { font-size: .85rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--cyan); margin-bottom: 4px; }
+  .crew .unphoto { grid-column: 2; justify-self: start; font: inherit; font-size: .85rem; color: var(--muted); background: none; border: 0; padding: 2px 0; text-decoration: underline; cursor: pointer; }
+  .crew.off .photo, .crew.off input[type="text"] { opacity: .35; pointer-events: none; }
+  .playing { display: inline-flex; align-items: center; gap: 6px; margin-left: 10px; text-transform: none; letter-spacing: .02em; color: var(--text); font-weight: 600; }
+  .playing input { width: 22px; height: 22px; accent-color: var(--green); margin: 0; }
+  .send { font: inherit; font-weight: 700; font-size: 1.15rem; letter-spacing: .14em; text-transform: uppercase; min-height: 52px; border: 0; border-radius: 12px; cursor: pointer; color: #102a14; background: linear-gradient(#9cffb6, #3fbf63); }
+  .saved { text-align: center; min-height: 1.3em; color: var(--muted); }
+  .saved.ok { color: var(--green); }
+  .saved.bad { color: var(--red); }
 </style>
 </head>
 <body>
@@ -53,7 +73,7 @@
       document.body.appendChild(msg);
     };
     document.body.appendChild(s);
-  })(["config.js", "state.js", "admin.js"]);
+  })(["config.js", "state.js", "portraits.js", "admin.js"]);
 </script>
 </body>
 </html>
