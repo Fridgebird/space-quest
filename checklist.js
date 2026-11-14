@@ -99,6 +99,7 @@ window.Checklist = (function () {
       get: () => S.bypass,
       set: (v) => { S.bypass = v; if (v === "Disabled") S.bypassWasDisabled = true; } },
     { id: "oxygen", label: "Oxygen tanks", kind: "btn", action: "Stir",
+      lock: () => !S.battery,
       press: () => { if (!S.stirred) { S.stirred = true; S.undervolt = true; } } },
     { id: "battery", label: "6V battery → positive plate", kind: "btn", action: "Connect",
       press: () => {
@@ -108,6 +109,7 @@ window.Checklist = (function () {
       } },
     { id: "cartridge", label: "Atmospheric thermal plasma", kind: "seg", options: ["Open", "Shut"],
       show: () => S.pressure.toFixed(1) + " µPa", get: () => S.valves, set: (v) => { S.valves = v; },
+      rowLabel: "Atmospheric thermal plasma cartridge valves",
       lock: (v) => v === "Open" && S.temp < TARGET_F,
       gauge: () => S.pressure, band: [LOW, HIGH], gaugeOk: pressureOK,
       extra: { action: "Auxiliary reserve +" + TOP_UP,
@@ -239,6 +241,7 @@ window.Checklist = (function () {
         gauge.append(c.gaugeFill);
         card.append(gauge);
       }
+      if (c.rowLabel) card.append(el("div", "cl-rowlabel", c.rowLabel));
       card.append(row);
       c.card = card;
       card.addEventListener("animationend", () => card.classList.remove("nope"));
