@@ -22,19 +22,21 @@ window.GAME_ID = "space-quest-2626";
 // 3) The admin page only opens with ?key=<this>, e.g. admin.html?key=rudolph
 window.ADMIN_KEY = "rudolph";
 
-// 4) About the Ship screen: the ship's builder's plate.
-//    The ship's name and cargo are filled in from Mission Control on the day; these are
-//    only shown until then. `type` is stamped under the name, and each `details` row
-//    becomes a line on the plate (a value of "UNKNOWN" shows as a red warning).
+// 4) The ship. Its name and cargo are filled in from Mission Control on the day; these
+//    are only shown until then. The header and log-on screen show `shortPrefix` + name
+//    (e.g. "JMC Gravy Boat"); About the Ship shows `owner` + `prefix` + name in full.
+//    Each `details` row is a line on the About the Ship monitor.
 window.SHIP = {
   name: "[Ship name]",
   cargo: "[Cargo]",
+  owner: "Jupiter Mining Corporation",
+  prefix: "SS",
+  shortPrefix: "JMC",
   type: "Solar class bulk carrier",
-  builder: "Built by Lunar Drydock Co. · Yard no. 2626",
   details: [
+    ["Builder", "Lunar Drydock Co., yard no. 2626"],
     ["Registry", "SCB-2626-0451"],
-    ["Home port", "Earth"],
-    ["Position", "UNKNOWN"]
+    ["Home port", "Earth"]
   ],
   plateNote: "Max load 48,000 t · DO NOT EXCEED (again)"
 };

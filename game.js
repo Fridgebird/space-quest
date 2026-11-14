@@ -39,8 +39,9 @@ function renderNames(names) {
   namesShown = key;
   const n = names || {};
   const ship = n.ship || SHIP.name;
-  $("logonShip").textContent = ship;
-  $("headerShip").textContent = ship;
+  const shortName = (SHIP.shortPrefix ? SHIP.shortPrefix + " " : "") + ship;
+  $("logonShip").textContent = shortName;
+  $("headerShip").textContent = shortName;
 
   // Crew Manifest: a personnel file for each rank. Optional ranks only appear when
   // ticked as playing; the stowaway is never listed.
@@ -71,23 +72,24 @@ function renderNames(names) {
     files.appendChild(file);
   });
 
-  // About the Ship: a stamped builder's plate.
-  const plate = make("div", "plate");
-  plate.append(make("div", "builder engr", SHIP.builder), make("div", "pname engr", ship), make("div", "pclass engr", SHIP.type));
-  const dl = make("dl", "engr");
-  const rows = SHIP.details.slice();
+  // About the Ship: the ship's record, listed on the monitor like an old DOS screen.
   const humans = listed.filter((c) => !c.droid).length;
-  rows.splice(1, 0, ["Cargo", n.cargo || SHIP.cargo], ["Crew", humans + " (in stasis) + 1 service droid"]);
-  rows.forEach(([label, value]) => {
-    const dd = make("dd");
-    if (String(value).toUpperCase() === "UNKNOWN") dd.appendChild(make("span", "unknown", "UNKNOWN"));
-    else dd.textContent = value;
-    dl.append(make("dt", null, label), dd);
-  });
-  plate.appendChild(dl);
+  const rows = [["Class", SHIP.type]].concat(SHIP.details, [
+    ["Cargo", n.cargo || SHIP.cargo],
+    ["Crew", humans + " in stasis + 1 service droid"]
+  ]);
+  const screen = make("div", "crt dos");
+  screen.append(
+    make("div", "dos-cmd", "C:\\JMC> TYPE SHIPREC.TXT"),
+    make("div", "dos-owner", SHIP.owner || ""),
+    make("div", "dos-name", ((SHIP.prefix ? SHIP.prefix + " " : "") + ship).toUpperCase())
+  );
+  const dl = make("dl", "dos-rows");
+  rows.forEach(([label, value]) => dl.append(make("dt", null, String(label).toUpperCase()), make("dd", null, String(value).toUpperCase())));
+  screen.append(dl, make("div", "dos-cmd caret", "C:\\JMC>"));
   const holder = $("shipPlate");
   holder.innerHTML = "";
-  holder.appendChild(plate);
+  holder.appendChild(screen);
   if (SHIP.plateNote) {
     const note = make("div", "plate-note-row");
     note.appendChild(make("span", "plate-note", SHIP.plateNote));
