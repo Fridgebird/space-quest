@@ -135,11 +135,6 @@ window.ALERTS = [
     id: "bio-sensors", title: "Ship-wide bio sensors offline", clearedTitle: "Ship-wide bio sensors",
     instructions: ["Placeholder: instructions for restoring the bio sensors."],
     clearedText: "Bio sensors online."
-  },
-  {
-    id: "logging", title: "Log & Monitoring error", clearedTitle: "Log & Monitoring",
-    instructions: ["Placeholder: instructions for the log & monitoring system."],
-    clearedText: "Log & monitoring restored."
   }
 ];
 // The title of the warp core start-up controls screen.
@@ -161,6 +156,32 @@ window.SYSTEMS = [
   { id: "reclamation", title: "Waste reclamation", text: ["Placeholder: waste reclamation nominal. Do not ask what's in the soup."] },
   { alert: "bio-sensors" },
   { id: "galley", title: "Galley food dispenser", text: ["Placeholder: food dispenser nominal. Menu: curry, curry or curry."] },
-  { alert: "logging" },
+  { id: "airlocks", title: "Airlock seals", text: ["Placeholder: all airlock seals holding."] },
   { id: "hot-water", title: "Hot water", text: ["Placeholder: hot water available. Showers limited to 3 minutes."] }
 ];
+
+// 10) Ship's Log menu item. It's locked with the Klatchian cipher: a sudoku in glyphs
+//     (see glyphs.js for which glyph is which digit). `puzzle` is the grid row by row,
+//     0 for a blank square. Each mark is a coloured square the crew must solve: `r` and
+//     `c` count from 1 (row from the top, column from the left), and `answer` is its digit.
+//     Once unlocked, the log shows `entries` (time, text).
+window.SHIP_LOG = {
+  cipher: {
+    puzzle: [
+      "024380000", "000006007", "058000400",
+      "400010000", "000705000", "000020008",
+      "001000670", "300500000", "000049210"
+    ],
+    marks: [
+      { colour: "Blue", r: 2, c: 3, answer: 9 },
+      { colour: "Pink", r: 6, c: 7, answer: 3 },
+      { colour: "Green", r: 8, c: 5, answer: 7 }
+    ]
+  },
+  entries: [
+    ["2626-12-21 22:04", "Placeholder: log entry."],
+    ["2626-12-22 03:17", "Placeholder: log entry."],
+    ["2626-12-22 03:41", "Placeholder: log entry."],
+    ["2626-12-23 09:00", "Placeholder: log entry."]
+  ]
+};

@@ -169,7 +169,7 @@ navButtons.forEach((b) => b.addEventListener("click", () => { Sfx.click(); showV
 function showView(view) {
   const navView = view === "checklist" ? "alerts" : view;
   navButtons.forEach((b) => b.classList.toggle("active", b.dataset.view === navView));
-  ["messages", "crew", "ship", "alerts", "checklist"].forEach((v) => { $("view-" + v).hidden = v !== view; });
+  ["messages", "crew", "ship", "log", "alerts", "checklist"].forEach((v) => { $("view-" + v).hidden = v !== view; });
   document.body.classList.toggle("wide-view", view === "checklist");
   window.scrollTo(0, 0);
 }
@@ -284,6 +284,13 @@ if (checklistAlert) {
 }
 $("openControls").addEventListener("click", () => { Sfx.click(); showView("checklist"); });
 $("checklistBack").addEventListener("click", () => showView("alerts"));
+
+// The Ship's Log, locked with the Klatchian cipher until the crew solve it.
+Cipher.mount($("logRoot"), () => {
+  GameState.setUnlocked("log", true).catch(() => {
+    $("status").textContent = "⚠ Could not reach the database";
+  });
+});
 
 // Wiring puzzles: tap a left terminal, then a right terminal, to connect them.
 const wiring = {}; // alertId -> { leftLabel: rightLabel }
@@ -511,6 +518,8 @@ GameState.subscribe((state) => {
   const fresh = Object.keys(state.cleared).filter((id) => state.cleared[id] && !cleared[id]);
   cleared = state.cleared;
   renderNames(state.names);
+  if (!firstLoad && state.unlocked.log && !Cipher.isUnlocked()) Sfx.chime();
+  Cipher.setUnlocked(state.unlocked.log);
   render(firstLoad ? [] : fresh);
   renderDiag(false);
   if (!firstLoad && fresh.length) Sfx.chime();

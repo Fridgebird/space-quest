@@ -207,6 +207,35 @@ main h2 { font-size: 1.4rem; margin: 0 0 16px; opacity: .92; }
 }
 @keyframes ready { 50% { box-shadow: 0 4px 0 #0d3a1a, 0 0 30px rgba(92,255,138,.9), inset 0 1px 0 rgba(255,255,255,.5); } }
 
+/* ---------- Ship's Log: the Klatchian cipher lock ---------- */
+.cipher-screen p { margin: 0 0 8px; }
+.log-denied { color: #ff6b5a; text-shadow: 0 0 6px rgba(255,75,35,.75); }
+.log-ok { color: var(--green); text-shadow: 0 0 6px rgba(92,255,138,.6); margin-bottom: 14px !important; }
+.cipher-grid-wrap { max-width: 540px; margin: 14px auto 4px; }
+.cipher-grid { display: block; width: 100%; height: auto; color: var(--amber); filter: drop-shadow(0 0 3px rgba(255,176,59,.55)); }
+.cipher-entry { display: grid; grid-gap: 16px; margin-top: 22px; }
+.cipher-slots { display: flex; justify-content: center; flex-wrap: wrap; }
+.cipher-slot { all: unset; cursor: pointer; display: grid; justify-items: center; grid-gap: 6px; margin: 0 8px; }
+.cipher-well { width: 74px; height: 74px; display: grid; place-items: center; border-radius: 6px; background: var(--crt-bg); color: var(--amber);
+  box-shadow: inset 0 2px 8px #000, 0 0 0 3px var(--hc), 0 0 12px var(--hc); }
+.cipher-slot.active .cipher-well { box-shadow: inset 0 2px 8px #000, 0 0 0 3px var(--hc), 0 0 0 6px #0c0d0b, 0 0 0 8px var(--hc), 0 0 18px var(--hc); }
+.cipher-well svg { width: 64%; height: 64%; filter: drop-shadow(0 0 3px rgba(255,176,59,.6)); }
+.cipher-lab { font-weight: 700; font-size: .85rem; letter-spacing: .14em; text-transform: uppercase; color: var(--hc); }
+.cipher-slot:focus-visible .cipher-well { outline: 2px dashed var(--amber); outline-offset: 10px; }
+.cipher-keys { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); grid-gap: 8px; padding: 10px; border-radius: 4px; background: var(--recess); box-shadow: inset 0 2px 6px #000; }
+.cipher-key { all: unset; cursor: pointer; height: 62px; display: grid; place-items: center; border-radius: 8px; color: #e8dcc0;
+  background: radial-gradient(circle at 40% 30%, #4a4a46, #1c1c1a 75%); border: 2px solid #0e0e0d; box-shadow: 0 3px 0 #050505, inset 0 1px 1px rgba(255,255,255,.18); }
+.cipher-key svg { width: 40px; height: 40px; max-width: 80%; }
+.cipher-key:active { transform: translateY(2px); box-shadow: 0 1px 0 #050505; }
+.cipher-key:focus-visible { outline: 2px dashed var(--amber); outline-offset: 2px; }
+.cipher-actions { display: flex; justify-content: center; flex-wrap: wrap; }
+.cipher-actions button { margin: 0 7px; }
+.cipher-verdict { min-height: 1.3em; text-align: center; font-family: var(--crt-face); font-size: 1.6rem; color: #ff8a7a; }
+.log-rows { display: grid; grid-template-columns: max-content minmax(0, 1fr); grid-gap: 6px 16px; margin: 0 0 12px; }
+.log-rows dt { opacity: .75; }
+.log-rows dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 560px) { .cipher-keys { grid-template-columns: repeat(5, minmax(0, 1fr)); } .log-rows { grid-template-columns: minmax(0, 1fr); } .log-rows dd { margin-bottom: 6px; } }
+
 /* ---------- Code entry and wiring, under the monitor ---------- */
 #codeForm { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 #codeInput {

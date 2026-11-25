@@ -2,7 +2,8 @@
 // otherwise localStorage (demo mode: syncs between tabs in one browser only).
 //
 // State shape: { cleared: { "<alertId>": true, ... }, warped: true, resetAt: <timestamp>,
-//   names: { ship, cargo, science: true, crew: { "<crewId>": { name, photo } } } }
+//   names: { ship, cargo, science: true, crew: { "<crewId>": { name, photo } } },
+//   unlocked: { log: true } }
 
 window.GameState = (function () {
   // Firebase 8 is built for older browsers too (the tablet's Chrome can't read Firebase 10).
@@ -52,7 +53,7 @@ window.GameState = (function () {
     // Calls cb(state) now and on every change. Optional onConn(bool) reports connection status.
     subscribe(cb, onConn) {
       return init().then(() => {
-        const normalise = (s) => Object.assign({ cleared: {}, warped: false, resetAt: null, names: null }, s);
+        const normalise = (s) => Object.assign({ cleared: {}, warped: false, resetAt: null, names: null, unlocked: {} }, s);
         if (isDemo) {
           const fire = () => cb(normalise(readDemo()));
           window.addEventListener("storage", (e) => { if (e.key === demoKey) fire(); });
@@ -77,6 +78,20 @@ window.GameState = (function () {
           writeDemo(s);
         } else {
           return ref.child("cleared/" + id).set(cleared ? true : null);
+        }
+      });
+    },
+
+    // Unlocks (or locks again) a locked screen, e.g. "log" for the Ship's Log.
+    setUnlocked(id, unlocked) {
+      return init().then(() => {
+        if (isDemo) {
+          const s = readDemo();
+          s.unlocked = s.unlocked || {};
+          if (unlocked) s.unlocked[id] = true; else delete s.unlocked[id];
+          writeDemo(s);
+        } else {
+          return ref.child("unlocked/" + id).set(unlocked ? true : null);
         }
       });
     },
@@ -106,13 +121,13 @@ window.GameState = (function () {
       });
     },
 
-    // Raises every alert again and sends the tablet back to the log-on screen.
-    // The ship and crew names are kept.
+    // Raises every alert again, locks the Ship's Log and sends the tablet back to the
+    // log-on screen. The ship and crew names are kept.
     reset() {
       const resetAt = Date.now();
       return init().then(() => {
         if (isDemo) return writeDemo({ resetAt, names: readDemo().names || null });
-        return ref.update({ cleared: null, warped: null, resetAt });
+        return ref.update({ cleared: null, warped: null, unlocked: null, resetAt });
       });
     }
   };

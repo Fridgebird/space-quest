@@ -9,8 +9,9 @@ if (key !== ADMIN_KEY) {
     '<div class="sub"><span id="count"></span> · <span class="status" id="status">Connecting…</span></div>' +
     '<details class="names" id="names"><summary>Name the ship &amp; crew</summary><form id="namesForm" autocomplete="off"></form></details>' +
     '<div id="list"></div>' +
+    '<div class="row" id="logRow"><div class="info"><div class="t">Ship&#39;s Log</div><div class="r" id="logInfo"></div></div><button class="toggle" id="logBtn"></button></div>' +
     '<div class="warp" id="warp"></div>' +
-    '<button class="reset" id="reset">Reset game (raise all alerts, back to log-on)</button>';
+    '<button class="reset" id="reset">Reset game (raise all alerts, lock the log, back to log-on)</button>';
 
   let cleared = {};
   const rows = {};
@@ -35,6 +36,15 @@ if (key !== ADMIN_KEY) {
     });
     rows[a.id] = { row, btn };
     document.getElementById("list").appendChild(row);
+  });
+
+  // The Ship's Log: the crew unlock it with the cipher; you can unlock or lock it here.
+  let logUnlocked = false;
+  document.getElementById("logInfo").textContent = "Crew unlock it with the cipher: " +
+    SHIP_LOG.cipher.marks.map((m) => m.colour + " = " + GLYPH_NAMES[m.answer]).join(", ");
+  document.getElementById("logBtn").addEventListener("click", () => {
+    if (logUnlocked && !confirm("Lock the Ship's Log again?")) return;
+    GameState.setUnlocked("log", !logUnlocked);
   });
 
   // ---------- Name the ship & crew (after the warm-up) ----------
@@ -137,11 +147,15 @@ if (key !== ADMIN_KEY) {
   }
 
   document.getElementById("reset").addEventListener("click", () => {
-    if (confirm("Reset the whole game and send the tablet back to the log-on screen? (Names and photos are kept.)")) GameState.reset();
+    if (confirm("Reset the whole game, lock the Ship's Log and send the tablet back to the log-on screen? (Names and photos are kept.)")) GameState.reset();
   });
 
   GameState.subscribe((state) => {
     fillNames(state.names);
+    logUnlocked = !!state.unlocked.log;
+    document.getElementById("logRow").classList.toggle("done", logUnlocked);
+    document.getElementById("logBtn").classList.toggle("on", logUnlocked);
+    document.getElementById("logBtn").textContent = logUnlocked ? "Unlocked" : "Unlock";
     cleared = state.cleared;
     let n = 0;
     ALERTS.forEach((a) => {
