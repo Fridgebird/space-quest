@@ -19,16 +19,17 @@ window.Cipher = (function () {
   function gridSvg() {
     const S = 40, O = 4, N = 9 * S;
     let g = "";
-    C.marks.forEach((m) => {
-      g += '<rect x="' + (O + (m.c - 1) * S) + '" y="' + (O + (m.r - 1) * S) + '" width="' + S + '" height="' + S +
-        '" fill="' + colourOf(m) + '" fill-opacity=".22" stroke="' + colourOf(m) + '" stroke-width="3"/>';
-    });
     for (let i = 1; i < 9; i++) {
       const thick = i % 3 === 0, p = O + i * S;
       const attrs = thick ? 'stroke-width="3" stroke-opacity="1"' : 'stroke-width="1" stroke-opacity=".35"';
       g += '<path d="M' + p + " " + O + " V" + (O + N) + " M" + O + " " + p + " H" + (O + N) + '" stroke="currentColor" ' + attrs + "/>";
     }
     g += '<rect x="' + O + '" y="' + O + '" width="' + N + '" height="' + N + '" fill="none" stroke="currentColor" stroke-width="3"/>';
+    // The coloured squares go on top of the grid lines, so their whole outline shows.
+    C.marks.forEach((m) => {
+      g += '<rect x="' + (O + (m.c - 1) * S) + '" y="' + (O + (m.r - 1) * S) + '" width="' + S + '" height="' + S +
+        '" fill="' + colourOf(m) + '" fill-opacity=".22" stroke="' + colourOf(m) + '" stroke-width="3.5"/>';
+    });
     C.puzzle.forEach((row, r) => row.split("").forEach((ch, c) => {
       if (ch === "0") return;
       g += '<g transform="translate(' + (O + c * S + 7) + " " + (O + r * S + 7) + ') scale(.65)">' + Glyphs.shape(+ch) + "</g>";
