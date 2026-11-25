@@ -65,7 +65,7 @@ window.Cipher = (function () {
       const b = el("button", "cipher-slot");
       b.type = "button";
       b.style.setProperty("--hc", colourOf(m));
-      b.append(el("span", "cipher-well"), el("span", "cipher-lab", m.colour));
+      b.appendChild(el("span", "cipher-well"));
       b.addEventListener("click", () => { Sfx.click(); active = i; drawSlots(); });
       slotRow.appendChild(b);
       return b;
