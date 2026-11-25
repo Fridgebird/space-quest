@@ -50,7 +50,7 @@ window.Cipher = (function () {
       screen.append(dl, el("p", "dos-cmd caret", "C:\\JMC>"));
       return;
     }
-    screen.appendChild(el("p", "log-denied", "ACCESS DENIED: LOG LOCKED BY KLATCHIAN CIPHER"));
+    screen.appendChild(el("p", "log-denied", "ACCESS DENIED: LOG LOCKED BY KLATCHIAN UKODUS CIPHER"));
     screen.appendChild(el("p", null, "Lock applied by: UNKNOWN USER"));
     const holder = el("div", "cipher-grid-wrap");
     holder.innerHTML = gridSvg();
