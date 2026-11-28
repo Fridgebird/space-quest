@@ -34,8 +34,8 @@ const make = (tag, cls, text) => {
 // Ship and crew names come from Mission Control (state.names); until then the
 // placeholders in config.js are shown.
 let namesShown = null;
-function renderNames(names) {
-  const key = JSON.stringify(names || null);
+function renderNames(names, enlisted) {
+  const key = JSON.stringify([names || null, !!enlisted]);
   if (key === namesShown) return;
   namesShown = key;
   const n = names || {};
@@ -45,10 +45,10 @@ function renderNames(names) {
   $("headerShip").textContent = shortName;
 
   // Crew Manifest: a personnel file for each rank. Optional ranks only appear when
-  // ticked as playing; the stowaway is never listed.
+  // ticked as playing; the stowaway only once they've passed the Space Corps exam.
   const files = $("crewFiles");
   files.innerHTML = "";
-  const listed = CREW.filter((c) => !c.optional || n.science);
+  const listed = CREW.filter((c) => (!c.optional || n.science) && (!c.stowaway || enlisted));
   let pod = 0;
   listed.forEach((c) => {
     const saved = (n.crew && n.crew[c.id]) || {};
@@ -60,21 +60,21 @@ function renderNames(names) {
     photo.appendChild(img);
     const rec = make("div", "rec");
     // Crew take the pods in order, skipping the one the stowaway used. The droid has none.
-    if (!c.droid && ++pod === EMPTY_POD) pod++;
+    if (!c.droid && !c.stowaway && ++pod === EMPTY_POD) pod++;
     rec.append(
       make("span", "rk", c.role),
       make("span", "nm", saved.name || "[Name]"),
       make("span", "dim", "RANK: " + c.rank.toUpperCase()),
       make("span", "dim", "EMPLOYEE NO. " + c.staff),
-      make("span", "dim", c.droid ? "STASIS POD: NONE" : "STASIS POD " + pod),
-      make("span", "ok", c.droid ? "STATUS: ACTIVE" : "STATUS: REVIVED")
+      make("span", "dim", c.droid ? "STASIS POD: NONE" : "STASIS POD " + (c.stowaway ? EMPTY_POD : pod)),
+      make("span", "ok", c.droid ? "STATUS: ACTIVE" : c.stowaway ? "STATUS: ENLISTED" : "STATUS: REVIVED")
     );
     file.append(photo, rec);
     files.appendChild(file);
   });
 
   // About the Ship: the ship's record, listed on the monitor like an old DOS screen.
-  const humans = listed.filter((c) => !c.droid).length;
+  const humans = listed.filter((c) => !c.droid && !c.stowaway).length;
   const rows = [["Class", SHIP.type]].concat(SHIP.details, [
     ["Cargo", n.cargo || SHIP.cargo],
     ["Crew", humans + " in stasis + 1 service droid"]
@@ -171,7 +171,7 @@ function showView(view) {
   const navView = view === "checklist" || view === "biosensors" ? "alerts" : view;
   navButtons.forEach((b) => b.classList.toggle("active", b.dataset.view === navView));
   // A screen can be missing for a few minutes after an update, while the browser still has the old page.
-  ["messages", "crew", "ship", "log", "alerts", "checklist", "biosensors"].forEach((v) => { if ($("view-" + v)) $("view-" + v).hidden = v !== view; });
+  ["messages", "crew", "ship", "log", "corps", "alerts", "checklist", "biosensors"].forEach((v) => { if ($("view-" + v)) $("view-" + v).hidden = v !== view; });
   document.body.classList.toggle("wide-view", view === "checklist" || view === "biosensors");
   if (view === "biosensors") BioSensors.fit();
   window.scrollTo(0, 0);
@@ -305,6 +305,16 @@ if (bioAlert) {
 }
 if ($("bioBack")) $("bioBack").addEventListener("click", () => showView("alerts"));
 $("checklistBack").addEventListener("click", () => showView("alerts"));
+
+// Space Corps terminal. Passing the exam clears the stowaway alert, and the stowaway joins
+// the crew manifest.
+if ($("corpsRoot")) {
+  SpaceCorps.mount($("corpsRoot"), () => {
+    GameState.setExamPassed(true)
+      .then(() => EXAM.clears && GameState.setCleared(EXAM.clears, true))
+      .catch(() => { $("status").textContent = "⚠ Could not reach the database"; });
+  });
+}
 
 // The Ship's Log, locked with the Klatchian cipher until the crew solve it.
 Cipher.mount($("logRoot"), () => {
@@ -560,7 +570,8 @@ GameState.subscribe((state) => {
   const freshRaised = Object.keys(state.raised).filter((id) => state.raised[id] && !raised[id] && !state.cleared[id]);
   cleared = state.cleared;
   raised = state.raised;
-  renderNames(state.names);
+  renderNames(state.names, state.exam.passed);
+  if ($("corpsRoot")) SpaceCorps.setExam(state.exam);
   if (!firstLoad && state.unlocked.log && !Cipher.isUnlocked()) Sfx.chime();
   Cipher.setUnlocked(state.unlocked.log);
   if (bioAlert) BioSensors.setCleared(state.cleared[bioAlert.id]);
@@ -577,6 +588,7 @@ GameState.subscribe((state) => {
     store.set(RESET_KEY, resetAt);
     store.remove(LOGGED_ON_KEY);
     Checklist.reset();
+    if ($("corpsRoot")) SpaceCorps.reset();
     showLogon();
   }
 

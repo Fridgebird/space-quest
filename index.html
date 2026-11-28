@@ -40,6 +40,7 @@
     <button data-view="crew">Crew Manifest</button>
     <button data-view="ship">About the Ship</button>
     <button data-view="log">Ship's Log</button>
+    <button data-view="corps">Space Corps</button>
     <button data-view="alerts">Alerts <span class="badge" id="badge" aria-label="active alerts" hidden></span></button>
   </nav>
   <main class="metal">
@@ -58,6 +59,10 @@
     <section id="view-log" hidden>
       <h2>Ship's Log</h2>
       <div id="logRoot"></div>
+    </section>
+    <section id="view-corps" hidden>
+      <h2>Space Corps</h2>
+      <div id="corpsRoot"></div>
     </section>
     <section id="view-alerts" hidden>
       <h2>Alerts</h2>
@@ -118,7 +123,7 @@
       document.body.appendChild(msg);
     };
     document.body.appendChild(s);
-  })(["config.js", "state.js", "sounds.js", "widgets.js", "portraits.js", "glyphs.js", "cipher.js", "biosensors.js", "checklist.js", "game.js"]);
+  })(["config.js", "state.js", "sounds.js", "widgets.js", "portraits.js", "glyphs.js", "cipher.js", "biosensors.js", "exam-marking.js", "corps.js", "checklist.js", "game.js"]);
 </script>
 </body>
 </html>

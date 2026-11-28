@@ -10,8 +10,9 @@ if (key !== ADMIN_KEY) {
     '<details class="names" id="names"><summary>Name the ship &amp; crew</summary><form id="namesForm" autocomplete="off"></form></details>' +
     '<div id="list"></div>' +
     '<div class="row" id="logRow"><div class="info"><div class="t">Ship&#39;s Log</div><div class="r" id="logInfo"></div></div><button class="toggle" id="logBtn"></button></div>' +
+    '<div class="row" id="examRow"><div class="info"><div class="t">Space Corps exam</div><div class="r" id="examInfo"></div></div><button class="toggle" id="examBtn"></button></div>' +
     '<div class="warp" id="warp"></div>' +
-    '<button class="reset" id="reset">Reset game (raise all alerts, standby alerts back on standby, lock the log, back to log-on)</button>';
+    '<button class="reset" id="reset">Reset game (raise all alerts, standby alerts back on standby, lock the log, wipe the exam, back to log-on)</button>';
 
   let cleared = {}, raised = {};
   const rows = {};
@@ -50,6 +51,16 @@ if (key !== ADMIN_KEY) {
   });
 
   // The Ship's Log: the crew unlock it with the cipher; you can unlock or lock it here.
+  // The Space Corps exam: you see the score; the crew only ever see PASS or FAIL.
+  let examPassed = false;
+  document.getElementById("examBtn").addEventListener("click", () => {
+    if (examPassed) {
+      if (confirm("Mark the exam as not passed? (The stowaway leaves the manifest.)")) GameState.setExamPassed(false);
+    } else if (confirm("Pass the exam now? This clears the stowaway alert and adds them to the manifest.")) {
+      GameState.setExamPassed(true).then(() => EXAM.clears && GameState.setCleared(EXAM.clears, true));
+    }
+  });
+
   let logUnlocked = false;
   document.getElementById("logInfo").textContent = "Crew unlock it with the cipher: " +
     SHIP_LOG.cipher.marks.map((m) => m.colour + " = " + GLYPH_NAMES[m.answer]).join(", ");
@@ -84,7 +95,7 @@ if (key !== ADMIN_KEY) {
       '<button type="button" class="photo"><img alt=""><span>Photo</span></button>' +
       '<div class="who"><div class="rank"></div><input type="text"></div>' +
       '<button type="button" class="unphoto" hidden>Remove photo</button>';
-    row.querySelector(".rank").textContent = c.role;
+    row.querySelector(".rank").textContent = c.stowaway ? c.role + " (secret: shown only once they pass the exam)" : c.role;
     const input = row.querySelector("input");
     input.setAttribute("aria-label", c.role + " name");
     input.placeholder = "Name";
@@ -158,11 +169,18 @@ if (key !== ADMIN_KEY) {
   }
 
   document.getElementById("reset").addEventListener("click", () => {
-    if (confirm("Reset the whole game, lock the Ship's Log and send the tablet back to the log-on screen? (Names and photos are kept.)")) GameState.reset();
+    if (confirm("Reset the whole game, lock the Ship's Log, wipe the exam and send the tablet back to the log-on screen? (Names and photos are kept.)")) GameState.reset();
   });
 
   GameState.subscribe((state) => {
     fillNames(state.names);
+    examPassed = !!state.exam.passed;
+    const ans = state.exam.answers || {};
+    document.getElementById("examInfo").textContent = (examPassed ? "Passed. " : "") + "Answered " + ExamMarking.answered(ans) + "/" + EXAM.questions.length +
+      ", right " + ExamMarking.score(ans) + "/" + EXAM.questions.length + " (pass mark " + EXAM.passMark + ")";
+    document.getElementById("examRow").classList.toggle("done", examPassed);
+    document.getElementById("examBtn").classList.toggle("on", examPassed);
+    document.getElementById("examBtn").textContent = examPassed ? "Passed" : "Pass now";
     logUnlocked = !!state.unlocked.log;
     document.getElementById("logRow").classList.toggle("done", logUnlocked);
     document.getElementById("logBtn").classList.toggle("on", logUnlocked);

@@ -3,7 +3,8 @@
 //
 // State shape: { cleared: { "<alertId>": true, ... }, warped: true, resetAt: <timestamp>,
 //   names: { ship, cargo, science: true, crew: { "<crewId>": { name, photo } } },
-//   unlocked: { log: true }, raised: { "<alertId>": true } }
+//   unlocked: { log: true }, raised: { "<alertId>": true },
+//   exam: { answers: { q0: 1, q9: "typed answer" }, passed: true } }
 
 window.GameState = (function () {
   // Firebase 8 is built for older browsers too (the tablet's Chrome can't read Firebase 10).
@@ -53,7 +54,7 @@ window.GameState = (function () {
     // Calls cb(state) now and on every change. Optional onConn(bool) reports connection status.
     subscribe(cb, onConn) {
       return init().then(() => {
-        const normalise = (s) => Object.assign({ cleared: {}, warped: false, resetAt: null, names: null, unlocked: {}, raised: {} }, s);
+        const normalise = (s) => Object.assign({ cleared: {}, warped: false, resetAt: null, names: null, unlocked: {}, raised: {}, exam: {} }, s);
         if (isDemo) {
           const fire = () => cb(normalise(readDemo()));
           window.addEventListener("storage", (e) => { if (e.key === demoKey) fire(); });
@@ -110,6 +111,34 @@ window.GameState = (function () {
       });
     },
 
+    // Saves one exam answer (question number counts from 0; null removes it).
+    setExamAnswer(i, value) {
+      return init().then(() => {
+        if (isDemo) {
+          const s = readDemo();
+          s.exam = s.exam || {};
+          s.exam.answers = s.exam.answers || {};
+          if (value == null) delete s.exam.answers["q" + i]; else s.exam.answers["q" + i] = value;
+          writeDemo(s);
+        } else {
+          return ref.child("exam/answers/q" + i).set(value == null ? null : value);
+        }
+      });
+    },
+
+    setExamPassed(passed) {
+      return init().then(() => {
+        if (isDemo) {
+          const s = readDemo();
+          s.exam = s.exam || {};
+          if (passed) s.exam.passed = true; else delete s.exam.passed;
+          writeDemo(s);
+        } else {
+          return ref.child("exam/passed").set(passed ? true : null);
+        }
+      });
+    },
+
     setWarped() {
       return init().then(() => {
         if (isDemo) {
@@ -135,13 +164,13 @@ window.GameState = (function () {
       });
     },
 
-    // Raises every alert again, puts the standby alerts back on standby, locks the Ship's Log
-    // and sends the tablet back to the log-on screen. The ship and crew names are kept.
+    // Raises every alert again, puts the standby alerts back on standby, locks the Ship's Log,
+    // wipes the exam and sends the tablet back to the log-on screen. The ship and crew names are kept.
     reset() {
       const resetAt = Date.now();
       return init().then(() => {
         if (isDemo) return writeDemo({ resetAt, names: readDemo().names || null });
-        return ref.update({ cleared: null, warped: null, unlocked: null, raised: null, resetAt });
+        return ref.update({ cleared: null, warped: null, unlocked: null, raised: null, exam: null, resetAt });
       });
     }
   };

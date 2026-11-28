@@ -44,7 +44,9 @@ window.SHIP = {
 // 5) Crew Manifest screen: one entry per post. Names and photos are added from
 //    Mission Control on the day. `rank` is shown on the personnel file.
 //    `optional: true` posts only appear when you tick "Playing today" in Mission Control.
-//    `droid: true` is the ship's own droid: it has no stasis pod. The stowaway is never
+//    `droid: true` is the ship's own droid: it has no stasis pod.
+//    `stowaway: true` is the stowaway: only listed once they pass the Space Corps exam,
+//    and then in the stasis pod nobody else used. The stowaway is otherwise never
 //    listed, and stasis pod 5 is skipped, as a clue that someone else used it.
 //    Don't change an `id` once names have been entered.
 window.CREW = [
@@ -56,7 +58,8 @@ window.CREW = [
   { id: "security", role: "Chief of Security", rank: "Lieutenant", staff: "2626-0640" },
   { id: "comms", role: "Communications Officer", rank: "Lieutenant (junior grade)", staff: "2626-0042" },
   { id: "science", role: "Science Officer", rank: "Ensign", staff: "2626-0973", optional: true },
-  { id: "droid", role: "Service Droid", rank: "None (ship's property)", staff: "N/A", droid: true }
+  { id: "droid", role: "Service Droid", rank: "None (ship's property)", staff: "N/A", droid: true },
+  { id: "stowaway", role: "Ensign (enlisted in flight)", rank: "Ensign", staff: "2626-1225", stowaway: true }
 ];
 // The stasis pod nobody on the manifest uses.
 window.EMPTY_POD = 5;
@@ -226,4 +229,62 @@ window.BIO_SENSORS = {
   clearedText: "Scanning ship for life-forms...",
   // Added on the diagnostic screen once the stowaway alert has been raised.
   foundText: "WARNING: 1 UNREGISTERED HUMANOID LIFE-FORM DETECTED ON CREW DECK. SEE ALERTS."
+};
+
+// 12) Space Corps menu item: a terminal with the Entrance Examination and some screens
+//     that are just there for atmosphere. Each screen has a `title` and `lines` (paragraphs).
+window.SPACE_CORPS = {
+  screens: [
+    { title: "Space Corps Directives", lines: [
+      "Directive 001: All stowaways must be ejected into space prior to hyperwarp.",
+      "Directive 002: Penalties for harbouring stowaways are severe.",
+      "Directive 003: During space travel, the captain may make any civilian an ensign on completion of the Space Corps Entrance Examination.",
+      "Directive 147: Crew must not eat the cargo. (Placeholder)",
+      "Directive 595: Do not feed the kibbles. (Placeholder)"
+    ] },
+    { title: "Galley Menu", lines: [
+      "MONDAY: Curry. TUESDAY: Curry. WEDNESDAY: Leftover curry.",
+      "THURSDAY: Chef's surprise (curry). FRIDAY: Fish-shaped protein bar.",
+      "Placeholder: please do not ask the food dispenser for a cup of tea. It will try."
+    ] },
+    { title: "Duty Rota", lines: [
+      "Hull scrubbing: ALL CREW (in stasis, so: nobody).",
+      "Toilet descaling: SERVICE DROID.",
+      "Polishing the captain's chair: SERVICE DROID.",
+      "Everything else: SERVICE DROID. (Placeholder)"
+    ] },
+    { title: "Holo-Film Library", lines: [
+      "1. Attack of the Space Kibbles (cert. 15)",
+      "2. Love Among the Asteroids",
+      "3. Mining Safety Procedures, Volume 9 (4 hours)",
+      "Placeholder: tapes 4 to 212 have been chewed by something."
+    ] }
+  ]
+};
+
+// 13) Space Corps Entrance Examination. The crew can change any answer at any time; marking
+//     only ever says PASS or FAIL, never the score or which answers are wrong.
+//     passMark      How many answers must be right to pass.
+//     retrySeconds  How long they must wait to resubmit after a fail.
+//     clears        The alert that clears on a pass (the stowaway then joins the manifest).
+//     Each question has `q`, then either `options` (multiple choice) and `answer` (the
+//     right option, counting from 0), or `accept` (typed answers that count as right;
+//     capitals, spaces and punctuation don't matter).
+//     These are placeholders, to be replaced.
+window.EXAM = {
+  passMark: 8,
+  retrySeconds: 30,
+  clears: "stowaway",
+  questions: [
+    { q: "What is the approximate speed of light in a vacuum?", options: ["30,000 km per second", "300,000 km per second", "3,000,000 km per second", "1,235 km per hour"], answer: 1 },
+    { q: "This ship's cargo hold is three quarters full. Using the ship's maximum load, how many tonnes of cargo are on board?", options: ["12,000 t", "32,000 t", "36,000 t", "40,000 t"], answer: 2 },
+    { q: "How many chambers does the human heart have?", options: ["2", "3", "4", "6"], answer: 2 },
+    { q: "Which planet is known as the Red Planet?", options: ["Venus", "Mars", "Jupiter", "Mercury"], answer: 1 },
+    { q: "According to Space Corps regulations, when must stowaways be ejected into space?", options: ["On sight", "After a fair trial", "Prior to hyperwarp", "Never"], answer: 2 },
+    { q: "Roughly how much would a 60 kg crew member weigh on the Moon?", options: ["The same", "About half", "About a sixth", "Nothing at all"], answer: 2 },
+    { q: "A shuttle travels 600 km in 2 hours. What is its average speed?", options: ["120 km/h", "300 km/h", "600 km/h", "1,200 km/h"], answer: 1 },
+    { q: "Which gas do plants take in to make their food?", options: ["Oxygen", "Nitrogen", "Carbon dioxide", "Helium"], answer: 2 },
+    { q: "Placeholder poster question: what colour is the warp fuse cover?", options: ["Red", "Yellow and black", "Blue", "Green"], answer: 1 },
+    { q: "What is the Space Corps motto?", accept: ["Placeholder motto"] }
+  ]
 };
