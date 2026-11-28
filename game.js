@@ -167,10 +167,12 @@ function typeOut(texts, paras, actions) {
 const navButtons = document.querySelectorAll("nav button");
 navButtons.forEach((b) => b.addEventListener("click", () => { Sfx.click(); showView(b.dataset.view); }));
 function showView(view) {
-  const navView = view === "checklist" ? "alerts" : view;
+  const navView = view === "checklist" || view === "biosensors" ? "alerts" : view;
   navButtons.forEach((b) => b.classList.toggle("active", b.dataset.view === navView));
-  ["messages", "crew", "ship", "log", "alerts", "checklist"].forEach((v) => { $("view-" + v).hidden = v !== view; });
-  document.body.classList.toggle("wide-view", view === "checklist");
+  // A screen can be missing for a few minutes after an update, while the browser still has the old page.
+  ["messages", "crew", "ship", "log", "alerts", "checklist", "biosensors"].forEach((v) => { if ($("view-" + v)) $("view-" + v).hidden = v !== view; });
+  document.body.classList.toggle("wide-view", view === "checklist" || view === "biosensors");
+  if (view === "biosensors") BioSensors.fit();
   window.scrollTo(0, 0);
 }
 
@@ -249,7 +251,8 @@ function renderDiag(fresh) {
   const key = JSON.stringify(lines);
   if (fresh || key !== diagShown) showLines(lines, diagShown !== null && !reducedMotion);
   diagShown = key;
-  $("openControls").hidden = !(a && a.checklist && !isCleared);
+  $("openControls").hidden = !(a && (a.checklist || a.biosensors) && !isCleared);
+  if (a) $("openControls").textContent = a.biosensors ? "Run diagnostic" : "Open warp core controls";
   $("codeForm").hidden = !(a && a.code && !isCleared);
   renderWiring(a, isCleared);
 }
@@ -282,7 +285,18 @@ if (checklistAlert) {
     });
   });
 }
-$("openControls").addEventListener("click", () => { Sfx.click(); showView("checklist"); });
+$("openControls").addEventListener("click", () => { Sfx.click(); showView(openAlert && openAlert.biosensors ? "biosensors" : "checklist"); });
+
+// The bio sensors diagnostic has its own screen: a stereogram core dump and a command line.
+const bioAlert = $("bioRoot") ? ALERTS.find((a) => a.biosensors) : null;
+if (bioAlert) {
+  BioSensors.mount($("bioRoot"), () => {
+    GameState.setCleared(bioAlert.id, true).catch(() => {
+      $("status").textContent = "⚠ Could not reach the database";
+    });
+  });
+}
+if ($("bioBack")) $("bioBack").addEventListener("click", () => showView("alerts"));
 $("checklistBack").addEventListener("click", () => showView("alerts"));
 
 // The Ship's Log, locked with the Klatchian cipher until the crew solve it.
@@ -520,6 +534,7 @@ GameState.subscribe((state) => {
   renderNames(state.names);
   if (!firstLoad && state.unlocked.log && !Cipher.isUnlocked()) Sfx.chime();
   Cipher.setUnlocked(state.unlocked.log);
+  if (bioAlert) BioSensors.setCleared(state.cleared[bioAlert.id]);
   render(firstLoad ? [] : fresh);
   renderDiag(false);
   if (!firstLoad && fresh.length) Sfx.chime();

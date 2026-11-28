@@ -96,6 +96,8 @@ window.ENDING = {
 //                  `solution` says which right terminal each left terminal connects to.
 //    checklist     OPTIONAL. If true, the monitor has a button to the warp core start-up
 //                  controls (see checklist-design.md), and the crew clear it there.
+//    biosensors    OPTIONAL. If true, the monitor has a button to the bio sensors
+//                  diagnostic (see BIO_SENSORS below), and the crew clear it there.
 //    If none of these is set, only you can clear the alert, from Mission Control.
 window.ALERTS = [
   {
@@ -133,8 +135,9 @@ window.ALERTS = [
   },
   {
     id: "bio-sensors", title: "Ship-wide bio sensors offline", clearedTitle: "Ship-wide bio sensors",
-    instructions: ["Placeholder: instructions for restoring the bio sensors."],
-    clearedText: "Bio sensors online."
+    instructions: ["Placeholder: the bio sensor array is offline and auto-recovery has failed. Run the diagnostic below."],
+    clearedText: "Bio sensors online. Scanning ship...",
+    biosensors: true
   }
 ];
 // The title of the warp core start-up controls screen.
@@ -184,4 +187,17 @@ window.SHIP_LOG = {
     ["2626-12-22 03:41", "Placeholder: log entry."],
     ["2626-12-23 09:00", "Placeholder: log entry."]
   ]
+};
+
+// 11) Bio sensors diagnostic. The core dump is a text stereogram: each word of `command`
+//     floats out of it at its `spots` entry ([row, column], row 0 to 21, column 15 to 75),
+//     top to bottom. The crew build the command from the `words` tiles, which also make
+//     up the rest of the dump. A command word mustn't have a doubled letter (like the OO in
+//     REBOOT) or be longer than 12 characters, or it won't float cleanly.
+window.BIO_SENSORS = {
+  command: ["RESTART", "LIFESIGNS", "/FORCE"],
+  spots: [[4, 33], [11, 50], [17, 23]],
+  words: ["RUN", "REBOOT", "RESTART", "PURGE", "FLUSH", "SCAN", "BIOSCAN", "LIFESIGNS", "CACHE", "SENSORS", "ARRAY",
+    "KERNEL", "NODE", "DECK7", "/ALL", "/FORCE", "/QUIET", "/Y", "-RF"],
+  clearedText: "Scanning ship for life-forms..."
 };

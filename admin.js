@@ -27,6 +27,7 @@ if (key !== ADMIN_KEY) {
       a.code ? "Crew enter code: " + a.code
       : a.wiring ? "Crew wire: " + a.wiring.left.map((L) => L + "→" + a.wiring.solution[L]).join(", ")
       : a.checklist ? "Crew complete the checklist on the tablet"
+      : a.biosensors ? "Crew enter the command: " + BIO_SENSORS.command.join(" ")
       : "You clear this one";
     const btn = row.querySelector(".toggle");
     btn.addEventListener("click", () => {
