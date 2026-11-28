@@ -3,7 +3,7 @@
 //
 // State shape: { cleared: { "<alertId>": true, ... }, warped: true, resetAt: <timestamp>,
 //   names: { ship, cargo, science: true, crew: { "<crewId>": { name, photo } } },
-//   unlocked: { log: true } }
+//   unlocked: { log: true }, raised: { "<alertId>": true } }
 
 window.GameState = (function () {
   // Firebase 8 is built for older browsers too (the tablet's Chrome can't read Firebase 10).
@@ -53,7 +53,7 @@ window.GameState = (function () {
     // Calls cb(state) now and on every change. Optional onConn(bool) reports connection status.
     subscribe(cb, onConn) {
       return init().then(() => {
-        const normalise = (s) => Object.assign({ cleared: {}, warped: false, resetAt: null, names: null, unlocked: {} }, s);
+        const normalise = (s) => Object.assign({ cleared: {}, warped: false, resetAt: null, names: null, unlocked: {}, raised: {} }, s);
         if (isDemo) {
           const fire = () => cb(normalise(readDemo()));
           window.addEventListener("storage", (e) => { if (e.key === demoKey) fire(); });
@@ -96,6 +96,20 @@ window.GameState = (function () {
       });
     },
 
+    // Raises (or stands down) an alert that starts on standby, e.g. the stowaway.
+    setRaised(id, raised) {
+      return init().then(() => {
+        if (isDemo) {
+          const s = readDemo();
+          s.raised = s.raised || {};
+          if (raised) s.raised[id] = true; else delete s.raised[id];
+          writeDemo(s);
+        } else {
+          return ref.child("raised/" + id).set(raised ? true : null);
+        }
+      });
+    },
+
     setWarped() {
       return init().then(() => {
         if (isDemo) {
@@ -121,13 +135,13 @@ window.GameState = (function () {
       });
     },
 
-    // Raises every alert again, locks the Ship's Log and sends the tablet back to the
-    // log-on screen. The ship and crew names are kept.
+    // Raises every alert again, puts the standby alerts back on standby, locks the Ship's Log
+    // and sends the tablet back to the log-on screen. The ship and crew names are kept.
     reset() {
       const resetAt = Date.now();
       return init().then(() => {
         if (isDemo) return writeDemo({ resetAt, names: readDemo().names || null });
-        return ref.update({ cleared: null, warped: null, unlocked: null, resetAt });
+        return ref.update({ cleared: null, warped: null, unlocked: null, raised: null, resetAt });
       });
     }
   };

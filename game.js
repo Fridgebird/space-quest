@@ -8,6 +8,7 @@ const store = {
 };
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 let cleared = {};
+let raised = {}; // standby alerts that have been raised
 let warped = false;
 let firstLoad = true;
 let openAlert = null;
@@ -200,7 +201,10 @@ $("logonBtn").addEventListener("click", () => {
 // ship systems are always green, just for show. The rubber button beside a light shows
 // its details on the monitor underneath.
 const isAlert = (item) => ALERTS.indexOf(item) >= 0;
-const titleOf = (item) => (isAlert(item) && cleared[item.id] && item.clearedTitle) || item.title;
+// A standby alert is an unlit light until it's raised (or you clear it anyway).
+const onStandby = (a) => !!(a && a.standby && !raised[a.id] && !cleared[a.id]);
+const isActive = (a) => isAlert(a) && !onStandby(a) && !cleared[a.id];
+const titleOf = (item) => (onStandby(item) && item.standbyTitle) || (isAlert(item) && cleared[item.id] && item.clearedTitle) || item.title;
 const boardItems = SYSTEMS.map((s) => (s.alert ? ALERTS.find((a) => a.id === s.alert) : s)).filter(Boolean);
 ALERTS.forEach((a) => { if (boardItems.indexOf(a) < 0) boardItems.push(a); });
 const lightEls = new Map();
@@ -236,13 +240,16 @@ const paras = (x) => (Array.isArray(x) ? x : x ? [x] : []);
 let diagShown = null, diagTimer = null;
 function renderDiag(fresh) {
   const item = selected, a = openAlert;
-  const isCleared = a ? !!cleared[a.id] : true;
+  const isCleared = a ? !!cleared[a.id] || onStandby(a) : true;
   let lines;
   if (!item) {
-    const active = ALERTS.filter((x) => !cleared[x.id]).length;
+    const active = ALERTS.filter(isActive).length;
     lines = [["dos-cmd", "C:\\JMC> STATUS"],
       ["", active ? active + (active === 1 ? " ALERT" : " ALERTS") + " ACTIVE. WARP DRIVE OFFLINE." : "ALL SYSTEMS NOMINAL. WARP DRIVE READY."],
       ["", "Press the button beside a light for details."]];
+  } else if (onStandby(a)) {
+    lines = [["dos-cmd", "C:\\JMC> DIAG " + titleOf(item).toUpperCase()], ["diag-status", "STATUS: STANDBY"]]
+      .concat(paras(a.standbyText).map((t) => ["", t]));
   } else {
     lines = [["dos-cmd", "C:\\JMC> DIAG " + titleOf(item).toUpperCase()],
       ["diag-status" + (a && !isCleared ? " bad" : ""), "STATUS: " + (a && !isCleared ? "*** ALERT ***" : "NOMINAL")]]
@@ -402,16 +409,20 @@ $("codeForm").addEventListener("submit", (e) => {
   }
 });
 
-function render(newlyCleared) {
+function render(newlyCleared, newlyRaised) {
   let active = 0;
   lightEls.forEach((els, item) => {
-    const bad = isAlert(item) && !cleared[item.id];
+    const bad = isActive(item);
     if (bad) active++;
     els.light.classList.toggle("bad", bad);
-    els.light.classList.toggle("ok", !bad);
+    els.light.classList.toggle("ok", !bad && !onStandby(item));
     if (els.light.textContent !== titleOf(item)) els.light.textContent = titleOf(item);
     if (isAlert(item) && newlyCleared.includes(item.id)) {
       els.light.classList.remove("just"); void els.light.offsetWidth; els.light.classList.add("just");
+    }
+    // A newly raised alert flashes for a few seconds, then stays lit.
+    if (isAlert(item) && newlyRaised.includes(item.id)) {
+      els.light.classList.remove("raised-now"); void els.light.offsetWidth; els.light.classList.add("raised-now");
     }
   });
   $("badge").textContent = active;
@@ -427,6 +438,22 @@ $("warpBtn").addEventListener("click", () => {
     $("status").textContent = "⚠ Could not reach the database";
   });
 });
+
+// A standby alert with `raisedBy` is raised a few seconds after that other alert is cleared
+// (the stowaway turns up once the bio sensors have scanned the ship).
+const raiseTimers = {};
+function autoRaise() {
+  ALERTS.forEach((a) => {
+    const due = a.raisedBy && cleared[a.raisedBy] && onStandby(a);
+    if (due && !raiseTimers[a.id]) {
+      raiseTimers[a.id] = setTimeout(() => {
+        raiseTimers[a.id] = null;
+        if (onStandby(a) && cleared[a.raisedBy]) GameState.setRaised(a.id, true).catch(() => {});
+      }, 5000);
+    }
+    if (!due && raiseTimers[a.id]) { clearTimeout(raiseTimers[a.id]); raiseTimers[a.id] = null; }
+  });
+}
 
 // Ending: warp streaks, then Earth grows as the ship flies home.
 const WARP_END = 3.6, ARRIVAL = 5.5;
@@ -530,14 +557,19 @@ function hideEnding() {
 
 GameState.subscribe((state) => {
   const fresh = Object.keys(state.cleared).filter((id) => state.cleared[id] && !cleared[id]);
+  const freshRaised = Object.keys(state.raised).filter((id) => state.raised[id] && !raised[id] && !state.cleared[id]);
   cleared = state.cleared;
+  raised = state.raised;
   renderNames(state.names);
   if (!firstLoad && state.unlocked.log && !Cipher.isUnlocked()) Sfx.chime();
   Cipher.setUnlocked(state.unlocked.log);
   if (bioAlert) BioSensors.setCleared(state.cleared[bioAlert.id]);
-  render(firstLoad ? [] : fresh);
+  if (bioAlert) BioSensors.setFound(ALERTS.some((a) => a.raisedBy === bioAlert.id && (raised[a.id] || cleared[a.id])));
+  render(firstLoad ? [] : fresh, firstLoad ? [] : freshRaised);
   renderDiag(false);
   if (!firstLoad && fresh.length) Sfx.chime();
+  if (!firstLoad && freshRaised.length) Sfx.alarm();
+  autoRaise();
 
   // Mission Control pressed Reset: go back to the log-on screen.
   const resetAt = state.resetAt ? String(state.resetAt) : "";

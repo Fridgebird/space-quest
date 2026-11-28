@@ -99,6 +99,14 @@ window.ENDING = {
 //    biosensors    OPTIONAL. If true, the monitor has a button to the bio sensors
 //                  diagnostic (see BIO_SENSORS below), and the crew clear it there.
 //    If none of these is set, only you can clear the alert, from Mission Control.
+//
+//    Alerts can also start on standby: an unlit light that doesn't count against the warp
+//    drive until it's raised. Raising it lights it red with an alarm.
+//    standby       If true, the alert starts on standby.
+//    standbyTitle  The words on the light while it's on standby.
+//    standbyText   What the monitor shows while it's on standby.
+//    raisedBy      OPTIONAL. The id of another alert: this one is raised automatically a few
+//                  seconds after that one is cleared. Otherwise you raise it from Mission Control.
 window.ALERTS = [
   {
     id: "warp-core", title: "Warp core offline", clearedTitle: "Warp core online",
@@ -138,6 +146,20 @@ window.ALERTS = [
     instructions: ["Placeholder: the bio sensor array is offline and auto-recovery has failed. Run the diagnostic below."],
     clearedText: "Bio sensors online. Scanning ship...",
     biosensors: true
+  },
+  {
+    id: "stowaway", title: "Unregistered life-form", standbyTitle: "Intruder detection", clearedTitle: "Intruder detection",
+    standby: true, raisedBy: "bio-sensors",
+    standbyText: ["No data: the ship-wide bio sensors are offline."],
+    instructions: ["Unregistered humanoid life-form detected on crew deck.", "Possible stowaway. Alert security team."],
+    clearedText: "Stowaway situation resolved."
+  },
+  {
+    id: "infestation", title: "Infestation detected", standbyTitle: "Biohazard monitor", clearedTitle: "Biohazard monitor",
+    standby: true,
+    standbyText: ["No biohazards detected."],
+    instructions: ["Placeholder: details of the infestation."],
+    clearedText: "Infestation contained."
   }
 ];
 // The title of the warp core start-up controls screen.
@@ -158,7 +180,9 @@ window.SYSTEMS = [
   { alert: "navicom" },
   { id: "reclamation", title: "Waste reclamation", text: ["Placeholder: waste reclamation nominal. Do not ask what's in the soup."] },
   { alert: "bio-sensors" },
+  { alert: "stowaway" },
   { id: "galley", title: "Galley food dispenser", text: ["Placeholder: food dispenser nominal. Menu: curry, curry or curry."] },
+  { alert: "infestation" },
   { id: "airlocks", title: "Airlock seals", text: ["Placeholder: all airlock seals holding."] },
   { id: "hot-water", title: "Hot water", text: ["Placeholder: hot water available. Showers limited to 3 minutes."] }
 ];
@@ -199,5 +223,7 @@ window.BIO_SENSORS = {
   spots: [[4, 33], [11, 50], [17, 23]],
   words: ["RUN", "REBOOT", "RESTART", "PURGE", "FLUSH", "SCAN", "BIOSCAN", "LIFESIGNS", "CACHE", "SENSORS", "ARRAY",
     "KERNEL", "NODE", "DECK7", "/ALL", "/FORCE", "/QUIET", "/Y", "-RF"],
-  clearedText: "Scanning ship for life-forms..."
+  clearedText: "Scanning ship for life-forms...",
+  // Added on the diagnostic screen once the stowaway alert has been raised.
+  foundText: "WARNING: 1 UNREGISTERED HUMANOID LIFE-FORM DETECTED ON CREW DECK. SEE ALERTS."
 };

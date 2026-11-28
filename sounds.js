@@ -39,6 +39,7 @@ window.Sfx = (function () {
     buzz() { tone("square", 92, 0.35, 0.08); },                              // doesn't work
     beep() { tone("square", 1180, 0.07, 0.03); },                            // screen message
     ping() { tone("sine", 1480, 0.45, 0.16); tone("sine", 1110, 0.5, 0.12, 0.16); }, // undervolt alarm
+    alarm() { [0, .5, 1].forEach((t) => { tone("square", 660, 0.22, 0.05, t); tone("square", 440, 0.22, 0.05, t + 0.25); }); }, // alert raised
     chime() { [523, 784, 1047, 1568].forEach((f, i) => tone("triangle", f, 0.5, 0.2, i * 0.1)); },
     warp() {
       if (!ctx) return;

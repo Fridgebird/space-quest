@@ -11,10 +11,12 @@ if (key !== ADMIN_KEY) {
     '<div id="list"></div>' +
     '<div class="row" id="logRow"><div class="info"><div class="t">Ship&#39;s Log</div><div class="r" id="logInfo"></div></div><button class="toggle" id="logBtn"></button></div>' +
     '<div class="warp" id="warp"></div>' +
-    '<button class="reset" id="reset">Reset game (raise all alerts, lock the log, back to log-on)</button>';
+    '<button class="reset" id="reset">Reset game (raise all alerts, standby alerts back on standby, lock the log, back to log-on)</button>';
 
-  let cleared = {};
+  let cleared = {}, raised = {};
   const rows = {};
+  // A standby alert is an unlit light until it's raised (or cleared anyway).
+  const onStandby = (a) => !!(a.standby && !raised[a.id] && !cleared[a.id]);
 
   ALERTS.forEach((a) => {
     const row = document.createElement("div");
@@ -23,16 +25,24 @@ if (key !== ADMIN_KEY) {
       '<div class="info"><div class="t"></div><div class="r"></div></div>' +
       '<button class="toggle"></button>';
     row.querySelector(".t").textContent = a.title;
-    row.querySelector(".r").textContent =
+    const how =
       a.code ? "Crew enter code: " + a.code
       : a.wiring ? "Crew wire: " + a.wiring.left.map((L) => L + "→" + a.wiring.solution[L]).join(", ")
       : a.checklist ? "Crew complete the checklist on the tablet"
       : a.biosensors ? "Crew enter the command: " + BIO_SENSORS.command.join(" ")
       : "You clear this one";
+    const parent = a.raisedBy && ALERTS.find((x) => x.id === a.raisedBy);
+    row.querySelector(".r").textContent = !a.standby ? how
+      : (parent ? "Raised automatically when \"" + parent.title + "\" is cleared, or raise it now. " : "On standby until you raise it. ") + how;
     const btn = row.querySelector(".toggle");
     btn.addEventListener("click", () => {
+      if (onStandby(a)) {
+        if (confirm("Raise \"" + a.title + "\" on the tablet now?")) GameState.setRaised(a.id, true);
+        return;
+      }
       const clear = !cleared[a.id];
       if (!clear && !confirm("Raise \"" + a.title + "\" again?")) return;
+      if (!clear && a.standby) GameState.setRaised(a.id, true);
       GameState.setCleared(a.id, clear);
     });
     rows[a.id] = { row, btn };
@@ -158,19 +168,24 @@ if (key !== ADMIN_KEY) {
     document.getElementById("logBtn").classList.toggle("on", logUnlocked);
     document.getElementById("logBtn").textContent = logUnlocked ? "Unlocked" : "Unlock";
     cleared = state.cleared;
-    let n = 0;
+    raised = state.raised;
+    // Alerts on standby don't count: the warp drive only waits for live ones.
+    let n = 0, live = 0;
     ALERTS.forEach((a) => {
-      const on = !!cleared[a.id];
+      const on = !!cleared[a.id], standby = onStandby(a);
+      if (!standby) live++;
       if (on) n++;
       rows[a.id].row.classList.toggle("done", on);
+      rows[a.id].row.classList.toggle("standby", standby);
       rows[a.id].btn.classList.toggle("on", on);
-      rows[a.id].btn.textContent = on ? "Cleared" : "Clear";
+      rows[a.id].btn.textContent = standby ? "Raise" : on ? "Cleared" : "Clear";
     });
-    document.getElementById("count").textContent = n + "/" + ALERTS.length + " alerts cleared";
+    const ready = n === live;
+    document.getElementById("count").textContent = n + "/" + live + " alerts cleared" + (live < ALERTS.length ? " (" + (ALERTS.length - live) + " on standby)" : "");
     const warp = document.getElementById("warp");
-    warp.classList.toggle("on", state.warped || n === ALERTS.length);
+    warp.classList.toggle("on", state.warped || ready);
     warp.textContent = state.warped ? "🚀 Warp engaged: game complete"
-      : n === ALERTS.length ? "Warp button is live on the tablet"
+      : ready ? "Warp button is live on the tablet"
       : "Warp offline until all alerts are cleared";
   }, (connected) => {
     document.getElementById("status").textContent = (GameState.isDemo ? "Demo mode · " : "") + (connected ? "● Live" : "○ Reconnecting…");

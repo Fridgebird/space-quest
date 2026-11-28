@@ -185,6 +185,7 @@ main h2 { font-size: 1.4rem; margin: 0 0 16px; opacity: .92; }
 .ann.ok { background: #0f3a1e; color: #b6ffcb; box-shadow: inset 0 0 14px rgba(92,255,138,.45), 0 0 10px rgba(92,255,138,.25); }
 .ann.bad { background: #6e0c0c; color: #ffd0d0; box-shadow: inset 0 0 16px rgba(255,59,59,.7), 0 0 14px rgba(255,59,59,.5); }
 .ann.just { animation: lit-up 1.4s ease-out; }
+.ann.raised-now { animation: alarm 1s steps(2) 5; }
 @keyframes lit-up { 0%, 30% { filter: brightness(2.2); } 100% { filter: none; } }
 .light-row .w-rubber-btn { width: 40px; height: 40px; justify-self: center; }
 .light-row.sel .w-rubber-btn { box-shadow: 0 3px 0 #050505, 0 0 0 4px #2c2f29, 0 0 0 6px var(--amber), 0 0 12px rgba(255,176,59,.6), inset 0 1px 1px rgba(255,255,255,.18); }

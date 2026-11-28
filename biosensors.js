@@ -67,7 +67,7 @@ window.BioSensors = (function () {
     return rows;
   }
 
-  let root = null, onSolved = null, cleared = null, dump = null;
+  let root = null, onSolved = null, cleared = null, found = false, dump = null;
   let typed = [], cmd = null, reply = null;
 
   function render() {
@@ -78,6 +78,7 @@ window.BioSensors = (function () {
     if (cleared) {
       screen.appendChild(el("p", "bio-ok", "BIO SENSOR ARRAY: ONLINE."));
       screen.appendChild(el("p", null, B.clearedText));
+      if (found && B.foundText) screen.appendChild(el("p", "bio-bad", B.foundText));
       screen.appendChild(el("p", "dos-cmd caret", "C:\\JMC>"));
       dump = null;
       return;
@@ -142,6 +143,13 @@ window.BioSensors = (function () {
   return {
     mount(container, solved) { root = container; onSolved = solved; },
     fit,
+    // Whether the scan has found something (the stowaway alert has been raised).
+    setFound(on) {
+      on = !!on;
+      if (on === found) return;
+      found = on;
+      if (cleared) render();
+    },
     // Called with the shared state; only redraws when it changes.
     setCleared(on) {
       on = !!on;
